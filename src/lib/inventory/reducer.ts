@@ -14,7 +14,7 @@ import type {
 
 /**
  * Every change to the inventory goes through `reduce`. It is pure: ids and
- * timestamps come in on the action (see `actions.ts`), so the same action
+ * timestamps come in on the action (see `stamp()` in `store.ts`), so the same action
  * always produces the same state. Invalid actions are refused with an error
  * code instead of throwing, and leave the state untouched.
  *
@@ -25,6 +25,9 @@ import type {
  * - Delivered ("leglo") turns each shipment item into a `Sale`.
  * - Returned, or deleting a shipment that has not gone out yet, puts the
  *   pieces back on the shelf.
+ * - `Article.purchasePrice` is the weighted average cost of the pieces on the
+ *   shelf. Pieces that come back (returned or cancelled shipment, undone sale)
+ *   bring the cost they left with, so it is re-averaged then too.
  */
 
 export type ArticleInput = {
@@ -50,7 +53,8 @@ export type InventoryAction =
   | { type: "article/create"; nonce: string; at: string; input: ArticleInput; quantity: number }
   | { type: "article/update"; id: Id; at: string; input: ArticleInput }
   | { type: "article/adjust"; id: Id; nonce: string; at: string; quantity: number; note: string }
-  | { type: "article/delete"; id: Id }
+  /** `undoCreate`: only while nothing but the opening stock has touched it (the "Artikal je dodat" undo). */
+  | { type: "article/delete"; id: Id; undoCreate?: boolean }
   | {
       type: "stock/receive"
       articleId: Id
@@ -156,6 +160,13 @@ function movement(
   return { id, articleId, type, quantity, unitPrice, date, ...(refId && { refId }), ...(note && { note }) }
 }
 
+/** Weighted average cost after `quantity` pieces costing `unitCost` join the shelf. */
+function averageCost(article: Article, quantity: number, unitCost: number) {
+  const total = article.quantity + quantity
+  if (total <= 0) return article.purchasePrice
+  return Math.round((article.quantity * article.purchasePrice + quantity * unitCost) / total)
+}
+
 function setArticle(state: InventoryState, article: Article): Article[] {
   return state.articles.map((a) => (a.id === article.id ? article : a))
 }
@@ -177,7 +188,12 @@ function restock(
     movements.push(
       movement(`${nonce}:m:${a.id}`, a.id, "shipment-return", qty, item.unitSalePrice, at, shipment.id),
     )
-    return { ...a, quantity: a.quantity + qty, updatedAt: at }
+    return {
+      ...a,
+      quantity: a.quantity + qty,
+      purchasePrice: averageCost(a, qty, item.unitPurchasePrice),
+      updatedAt: at,
+    }
   })
   return { articles, movements }
 }
@@ -245,6 +261,12 @@ export function reduce(state: InventoryState, action: InventoryAction): ReduceRe
         (s) => (s.status === "pending" || s.status === "sent") && s.items.some((i) => i.articleId === article.id),
       )
       if (open) return fail("article-in-shipment")
+      if (
+        action.undoCreate &&
+        (state.movements.some((m) => m.articleId === article.id && m.type !== "opening") ||
+          state.sales.some((s) => s.articleId === article.id))
+      )
+        return fail("article-changed")
       return done({
         ...state,
         articles: state.articles.filter((a) => a.id !== article.id),
@@ -256,14 +278,18 @@ export function reduce(state: InventoryState, action: InventoryAction): ReduceRe
       const article = state.articles.find((a) => a.id === action.articleId)
       if (!article) return fail("not-found")
       if (!isWhole(action.quantity, 1) || !isPrice(action.unitPurchasePrice)) return fail("invalid-input")
-      const total = article.quantity + action.quantity
       // Weighted average cost, so profit on the next sale reflects what was actually paid.
-      const purchasePrice = Math.round(
-        (article.quantity * article.purchasePrice + action.quantity * action.unitPurchasePrice) / total,
-      )
+      // Pieces packed in open shipments keep the cost they were packed at and are
+      // averaged back in if they return (see `restock`).
+      const purchasePrice = averageCost(article, action.quantity, action.unitPurchasePrice)
       return done({
         ...state,
-        articles: setArticle(state, { ...article, quantity: total, purchasePrice, updatedAt: action.at }),
+        articles: setArticle(state, {
+          ...article,
+          quantity: article.quantity + action.quantity,
+          purchasePrice,
+          updatedAt: action.at,
+        }),
         movements: [
           ...state.movements,
           movement(
@@ -320,7 +346,12 @@ export function reduce(state: InventoryState, action: InventoryAction): ReduceRe
         ...state,
         sales: state.sales.filter((s) => s.id !== sale.id),
         articles: article
-          ? setArticle(state, { ...article, quantity: article.quantity + sale.quantity, updatedAt: action.at })
+          ? setArticle(state, {
+              ...article,
+              quantity: article.quantity + sale.quantity,
+              purchasePrice: averageCost(article, sale.quantity, sale.unitPurchasePrice),
+              updatedAt: action.at,
+            })
           : state.articles,
         movements: article
           ? [

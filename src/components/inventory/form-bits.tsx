@@ -1,7 +1,7 @@
 "use client"
 
 import { TriangleAlertIcon } from "lucide-react"
-import type { ComponentProps, ReactNode } from "react"
+import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
 import { Input } from "@/components/ui/input"
 import type { Dictionary } from "@/content/types"
 import { siteConfig } from "@/config/site"
@@ -31,9 +31,9 @@ export function readAmount(
 export function MoneyInput({ className, ...props }: ComponentProps<"input">) {
   return (
     <div className={cn("relative min-w-0", className)}>
-      <Input inputMode="numeric" autoComplete="off" className="pr-14 tabular-nums" {...props} />
+      <Input inputMode="numeric" autoComplete="off" className="pr-12 tabular-nums" {...props} />
       <span
-        className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 font-mono text-[11px] font-medium tracking-[0.12em] text-ink-faint"
+        className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[12px] font-medium text-fg-faint"
         aria-hidden
       >
         {siteConfig.currency}
@@ -42,13 +42,35 @@ export function MoneyInput({ className, ...props }: ComponentProps<"input">) {
   )
 }
 
-/** The live "what this does" box under a form, on sand like Catena's builder summary. */
-export function Preview({ title, children }: { title: ReactNode; children: ReactNode }) {
+/**
+ * The live "what this does" box under a form: a grey well, rows of label → figure.
+ * The box itself is not a live region (every keystroke would re-read all of it);
+ * `announce` is the one line screen readers hear, once typing pauses.
+ */
+export function Preview({ title, announce, children }: { title: ReactNode; announce?: string; children: ReactNode }) {
   return (
-    <div aria-live="polite" className="rounded-2xl bg-sand px-4 py-3.5">
-      <p className="mb-2 font-mono text-[11px] font-medium tracking-[0.14em] text-ink-muted uppercase">{title}</p>
+    <div className="rounded-lg border border-hairline bg-sunken px-4 py-3">
+      <p className="mb-2 type-overline">{title}</p>
       <dl className="flex flex-col gap-1.5">{children}</dl>
+      {announce !== undefined && <Announcement text={announce} />}
     </div>
+  )
+}
+
+const ANNOUNCE_DELAY_MS = 800
+
+/** A polite status line that speaks `text` only after it has stopped changing for a moment. */
+function Announcement({ text }: { text: string }) {
+  // Starts with the opening value, which is not read out: only changes are.
+  const [spoken, setSpoken] = useState(text)
+  useEffect(() => {
+    const timer = setTimeout(() => setSpoken(text), ANNOUNCE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [text])
+  return (
+    <p role="status" className="sr-only">
+      {spoken}
+    </p>
   )
 }
 
@@ -65,14 +87,14 @@ export function PreviewRow({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <dt className="min-w-0 text-sm text-ink-soft">{label}</dt>
+      <dt className="min-w-0 text-[13px] text-fg-muted">{label}</dt>
       <dd
         className={cn(
           "shrink-0 text-right tabular-nums",
-          strong ? "font-display text-lg font-bold tracking-[-0.02em]" : "text-[15px] font-semibold",
+          strong ? "text-[17px] font-semibold tracking-[-0.01em]" : "text-[13.5px] font-medium",
           tone === "gain" && "text-gain",
           tone === "loss" && "text-loss",
-          tone === "muted" && "text-ink-faint",
+          tone === "muted" && "text-fg-faint",
         )}
       >
         {value}
@@ -84,7 +106,7 @@ export function PreviewRow({
 /** A soft warning that does not block saving. */
 export function Warning({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-start gap-2 rounded-xl bg-status-pending-soft px-3 py-2.5 text-[13px] leading-snug text-[oklch(0.42_0.1_65)]">
+    <p className="flex items-start gap-2 rounded-md border border-status-pending/25 bg-status-pending-soft px-3 py-2.5 text-[13px] leading-snug text-status-pending-ink">
       <TriangleAlertIcon className="mt-px size-4 shrink-0" aria-hidden />
       {children}
     </p>

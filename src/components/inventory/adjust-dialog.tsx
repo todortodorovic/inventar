@@ -19,16 +19,26 @@ type Props = {
   onOpenChange: (open: boolean) => void
   article: Article | undefined
   dict: Dictionary["inventory"]
+  /** The article's quantity right now (undo runs later, after other changes). */
+  quantityOf: (id: Id) => number | undefined
   onSaved: (id: Id) => void
 }
 
 /** Stocktake: set the counted quantity; the difference is logged as a correction. */
-export function AdjustDialog({ open, onOpenChange, article, dict, onSaved }: Props) {
+export function AdjustDialog({ open, onOpenChange, article, dict, quantityOf, onSaved }: Props) {
   const { t } = useApp()
   return (
     <Dialog open={open && !!article} onOpenChange={onOpenChange}>
       <DialogContent closeLabel={t.actions.close} className="sm:max-w-md">
-        {article && <AdjustForm article={article} dict={dict} onSaved={onSaved} onClose={() => onOpenChange(false)} />}
+        {article && (
+          <AdjustForm
+            article={article}
+            dict={dict}
+            quantityOf={quantityOf}
+            onSaved={onSaved}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -37,6 +47,7 @@ export function AdjustDialog({ open, onOpenChange, article, dict, onSaved }: Pro
 function AdjustForm({
   article,
   dict,
+  quantityOf,
   onSaved,
   onClose,
 }: Omit<Props, "open" | "onOpenChange" | "article"> & { article: Article; onClose: () => void }) {
@@ -56,8 +67,7 @@ function AdjustForm({
       document.getElementById(`${id}-counted`)?.focus()
       return
     }
-    if (diff === 0) return onClose()
-    const previous = article.quantity
+    if (diff === null || diff === 0) return onClose()
     const result = inventory.adjustQuantity(article.id, counted.value!, note)
     if (!result.ok) {
       toast(t.errors[result.error], { tone: "error" })
@@ -66,8 +76,12 @@ function AdjustForm({
     toast(fill(dict.adjust.done, { name: article.name }), {
       action: {
         label: t.actions.undo,
+        // Take back only this correction's difference: sales or receipts made since then stay counted.
         onClick: () => {
-          const undo = inventory.adjustQuantity(article.id, previous)
+          const now = quantityOf(article.id)
+          if (now === undefined) return toast(t.errors["not-found"], { tone: "error" })
+          if (now - diff < 0) return toast(t.errors["insufficient-stock"], { tone: "error" })
+          const undo = inventory.adjustQuantity(article.id, now - diff)
           if (!undo.ok) toast(t.errors[undo.error], { tone: "error" })
         },
       },
@@ -89,8 +103,8 @@ function AdjustForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[13px] font-semibold text-ink-soft">{dict.adjust.current}</p>
-          <p className="flex h-10 items-center font-display text-2xl font-bold tracking-[-0.03em] tabular-nums">
+          <p className="text-[13px] font-medium text-fg-soft">{dict.adjust.current}</p>
+          <p className="flex h-10 items-center text-[22px] font-semibold tracking-[-0.02em] tabular-nums md:h-9">
             {article.quantity}
           </p>
         </div>
@@ -118,7 +132,12 @@ function AdjustForm({
         </Field>
       </div>
 
-      <Preview title={dict.adjust.difference}>
+      <Preview
+        title={dict.adjust.difference}
+        announce={
+          diff === null ? "" : diff === 0 ? dict.adjust.noChange : `${dict.adjust.difference}: ${formatSigned(diff, locale)}`
+        }
+      >
         <PreviewRow
           label={diff === null || diff === 0 ? dict.adjust.noChange : plural(t.units.pieces, Math.abs(diff), locale)}
           value={diff === null ? "—" : formatSigned(diff, locale)}
@@ -135,10 +154,10 @@ function AdjustForm({
       </Preview>
 
       <DialogFooter>
-        <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={onClose}>
+        <Button type="button" variant="ghost" size="cta" onClick={onClose}>
           {t.actions.cancel}
         </Button>
-        <Button type="submit" variant="brand" size="cta">
+        <Button type="submit" variant="primary" size="cta">
           {dict.adjust.submit}
         </Button>
       </DialogFooter>

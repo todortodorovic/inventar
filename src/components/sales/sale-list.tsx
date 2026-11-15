@@ -19,6 +19,10 @@ const PAGE = 50
 
 type Day = { key: string; date: string; sales: Sale[] }
 
+/** The day's profit subtotal is a soft chip, so it reads apart from the rows' own profit. */
+const dayProfitTone = (n: number) =>
+  n > 0 ? "bg-gain-soft text-gain" : n < 0 ? "bg-loss-soft text-loss" : "bg-sunken-strong text-fg-muted"
+
 /**
  * Sales grouped by the seller's calendar day, newest first, with each day's
  * totals in a header that sticks under the app header while scrolling.
@@ -77,12 +81,12 @@ export function SaleList({
   return (
     // `overflow-clip` rounds the last row's hover without breaking the sticky day headers.
     <Panel className="overflow-clip">
-      <PanelHeader title={dict.title} description={dict.description} className="pb-4" />
+      <PanelHeader title={dict.title} description={dict.description} className="pb-3.5" />
 
       <div
         aria-hidden
         className={cn(
-          "hidden items-center gap-3 border-t border-line px-6 py-2.5 font-mono text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase md:grid xl:gap-4",
+          "hidden h-9 items-center gap-3 border-t border-hairline bg-surface-subtle px-5 type-label md:grid xl:gap-4",
           saleColumns,
         )}
       >
@@ -101,28 +105,31 @@ export function SaleList({
           const total = totals.get(day.key)!
           return (
             <li key={day.key}>
-              <div className="sticky top-[72px] z-10 flex items-center justify-between gap-3 border-y border-line bg-sand/90 px-5 py-2 backdrop-blur-md sm:px-6">
-                <h3 className="flex min-w-0 items-baseline gap-2">
-                  <span className="truncate font-display text-[15px] font-semibold tracking-[-0.01em]">
-                    {dayLabel(day)}
-                  </span>
-                  <span className="shrink-0 font-mono text-[11px] tracking-[0.08em] text-ink-faint uppercase">
+              {/* Day header: a cool-grey band that sticks under the top bar; on wider
+                  screens its subtotals sit in the revenue and profit columns. */}
+              <div
+                className={cn(
+                  "sticky top-(--topbar-h) z-10 flex min-h-10 items-center justify-between gap-3 border-y border-hairline bg-sunken/95 px-4 py-2 backdrop-blur-md sm:px-5 md:grid md:py-1.5 lg:top-0 xl:gap-4",
+                  saleColumns,
+                )}
+              >
+                <h3 className="flex min-w-0 items-baseline gap-2 md:col-span-3 lg:col-span-5">
+                  <span className="truncate text-[13px] font-semibold text-fg">{dayLabel(day)}</span>
+                  {/* Phones: the date needs the width; the rows below show the count. */}
+                  <span className="shrink-0 text-[12px] text-fg-muted tabular-nums max-sm:hidden">
                     {plural(t.units.sales, total.count, locale)}
                   </span>
                 </h3>
-                <p className="flex shrink-0 items-baseline gap-3 text-[13px] tabular-nums">
-                  <span className="font-semibold">
+                <p className="flex shrink-0 items-center gap-2 text-[13px] font-semibold tabular-nums md:contents">
+                  <span className="md:text-right">
                     <span className="sr-only">{t.fields.revenue}: </span>
                     {formatMoney(total.revenue, locale)}
                   </span>
-                  <span
-                    className={cn(
-                      "font-semibold",
-                      total.profit > 0 ? "text-gain" : total.profit < 0 ? "text-loss" : "text-ink-muted",
-                    )}
-                  >
-                    <span className="sr-only">{t.fields.profit}: </span>
-                    {formatSigned(total.profit, locale)}
+                  <span className="md:flex md:justify-end">
+                    <span className={cn("inline-flex h-[22px] items-center rounded-[6px] px-1.5 md:-mr-1.5", dayProfitTone(total.profit))}>
+                      <span className="sr-only">{t.fields.profit}: </span>
+                      {formatSigned(total.profit, locale)}
+                    </span>
                   </span>
                 </p>
               </div>
@@ -144,20 +151,20 @@ export function SaleList({
       </ol>
 
       {(shown < sales.length || hasShipmentSales) && (
-        <div className="flex flex-col items-center gap-4 border-t border-line px-5 py-5 sm:px-6">
+        <div className="flex flex-col items-center gap-4 border-t border-hairline px-4 py-5 sm:px-5">
           {shown < sales.length && (
             <div className="flex flex-col items-center gap-2.5">
-              <p className="font-mono text-[11px] tracking-[0.1em] text-ink-faint uppercase" aria-live="polite">
+              <p className="text-[12.5px] text-fg-muted" aria-live="polite">
                 {fill(dict.shown, { shown: formatNumber(shown, locale), total: formatNumber(sales.length, locale) })}
               </p>
-              <Button variant="outline" size="cta" className="rounded-full" onClick={() => setLimit(limit + PAGE)}>
+              <Button variant="outline" size="cta" onClick={() => setLimit(limit + PAGE)}>
                 {dict.showMore}
               </Button>
             </div>
           )}
           {hasShipmentSales && (
-            <p className="flex max-w-xl items-start gap-2 self-start text-[13px] text-ink-muted">
-              <InfoIcon className="mt-0.5 size-4 shrink-0 text-ink-faint" aria-hidden />
+            <p className="flex max-w-xl items-start gap-2 self-start text-[12.5px] text-fg-muted">
+              <InfoIcon className="mt-0.5 size-4 shrink-0 text-fg-faint" aria-hidden />
               {dict.shipmentHint}
             </p>
           )}

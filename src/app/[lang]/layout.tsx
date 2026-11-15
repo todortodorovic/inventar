@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "../globals.css"
-import { bricolage, geist, geistMono } from "@/app/fonts"
+import { inter, jetbrains } from "@/app/fonts"
 import { AppProvider } from "@/components/app/app-provider"
 import { Toaster } from "@/components/app/toaster"
 import { AppHeader } from "@/components/layout/app-header"
@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#faf8f4",
+  themeColor: "#f4f5f7",
   viewportFit: "cover",
 }
 
@@ -43,15 +43,30 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
     sales: common.nav.sales,
   }
   return (
-    <html lang={siteConfig.localeTags[locale]} className={cn(geist.variable, bricolage.variable, geistMono.variable)}>
-      <body className="min-h-svh overflow-x-clip bg-background">
+    <html lang={siteConfig.localeTags[locale]} className={cn(inter.variable, jetbrains.variable)}>
+      <body className="min-h-svh overflow-x-clip bg-canvas">
+        {/* First tab stop: jumps past the logo, sections, Demo and SR/EN. A white pill, so it
+            reads over the graphite sidebar and the light top bar alike. */}
+        <a
+          href="#main"
+          className="sr-only rounded-md bg-surface text-[13.5px] font-semibold text-fg shadow-pop ring-1 ring-hairline-strong focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-70 focus-visible:px-3.5 focus-visible:py-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {common.nav.skipToContent}
+        </a>
         <AppProvider locale={locale} t={common}>
-          <AppHeader dict={common} locale={locale} />
-          <main className="mx-auto w-full max-w-[1320px] px-4 pt-[104px] pb-[calc(112px+env(safe-area-inset-bottom))] sm:px-6 min-[900px]:pt-[128px] min-[900px]:pb-24">
-            {children}
-          </main>
+          {/* Desktop: a fixed sidebar on the left. Phones: a top bar here and a tab bar at the bottom. */}
+          <div className="min-h-svh lg:grid lg:grid-cols-[var(--sidebar-w)_minmax(0,1fr)]">
+            <AppHeader dict={common} locale={locale} />
+            <main
+              id="main"
+              tabIndex={-1}
+              className="mx-auto w-full max-w-[1240px] min-w-0 px-4 pt-5 pb-[calc(96px+env(safe-area-inset-bottom))] outline-none sm:px-6 lg:px-10 lg:pt-9 lg:pb-16"
+            >
+              {children}
+            </main>
+          </div>
           <MobileNav locale={locale} labels={labels} navLabel={common.nav.label} />
-          <Toaster closeLabel={common.actions.close} />
+          <Toaster />
         </AppProvider>
       </body>
     </html>

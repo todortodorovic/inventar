@@ -16,6 +16,7 @@ export const shipments: Dictionary["shipments"] = {
     returned: "Returned",
     returnedHint: "{percent} of completed shipments",
     returnedNone: "No shipment has come back.",
+    cancelledHint: "Cancelled before sending: {n}",
   },
 
   filters: {
@@ -33,6 +34,10 @@ export const shipments: Dictionary["shipments"] = {
     cod: "Cash on delivery",
     shipping: "Postage",
     tracking: "Tracking",
+    noTracking: "not added yet",
+    buyerPaysShipping: "paid by buyer",
+    more: "More actions for shipment {code}",
+    moreShort: "More actions",
     actions: "Actions for shipment {code}",
   },
 
@@ -48,13 +53,13 @@ export const shipments: Dictionary["shipments"] = {
 
   actions: {
     send: "Send",
-    deliver: "Delivered",
-    return: "Returned",
+    deliver: "Mark delivered",
+    return: "Mark returned",
     cancel: "Cancel shipment",
     backToPending: "Back to “To send”",
     undeliver: "Undo delivery",
     copy: "Copy details for the courier",
-    showSales: "Show",
+    showSales: "View in Sold",
   },
 
   toasts: {
@@ -103,7 +108,8 @@ export const shipments: Dictionary["shipments"] = {
     postalCode: "Postal code",
     items: "Items",
     searchArticles: "Search items in stock",
-    noArticles: "Nothing in stock. Add goods under Stock first.",
+    noArticles: "Nothing in stock to send. Add goods under Stock first.",
+    toStock: "Go to Stock",
     onHand: "{pieces} in stock",
     added: "Added: {n}",
     noLines: "No items yet. Pick one from the list above.",
@@ -138,5 +144,6 @@ export const shipments: Dictionary["shipments"] = {
     filteredTitle: "Nothing matches",
     filteredText: "No shipment matches this status or search.",
     showAll: "Show all",
+    noStockText: "Nothing is in stock yet. Add items under Stock, then create a shipment here.",
   },
 }

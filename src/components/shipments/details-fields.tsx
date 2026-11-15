@@ -79,8 +79,9 @@ export function validateDetails(
 export function FormSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex min-w-0 flex-col gap-3.5">
-      <legend className="mb-3.5 font-mono text-[11px] font-medium tracking-[0.16em] text-ink-faint uppercase">
+      <legend className="mb-3 flex w-full items-center gap-3 type-overline">
         {title}
+        <span className="h-px flex-1 bg-hairline" aria-hidden />
       </legend>
       {children}
     </fieldset>
@@ -180,7 +181,7 @@ export function DeliveryFields({ idPrefix, draft, errors, onChange, dict }: Fiel
             onChange={(e) => onChange("trackingNumber", e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            className="font-mono"
+            className="font-code"
           />
         </Field>
       </div>

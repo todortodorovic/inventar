@@ -1,7 +1,7 @@
 "use client"
 
 import { PackageOpenIcon, PackagePlusIcon, PlusIcon, SearchXIcon } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useApp } from "@/components/app/app-provider"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
 import { EmptyState } from "@/components/app/empty-state"
@@ -16,7 +16,7 @@ import { inventory, useInventory } from "@/lib/inventory/store"
 import type { Article, Id } from "@/lib/inventory/types"
 import { toast } from "@/lib/toast"
 import { AdjustDialog } from "./adjust-dialog"
-import type { ArticleAction } from "./article-actions"
+import { findArticleAction, type ArticleAction } from "./article-actions"
 import { ArticleCards } from "./article-cards"
 import { ArticleFormDialog } from "./article-form-dialog"
 import { ArticleTable } from "./article-table"
@@ -33,6 +33,25 @@ type DialogState = { kind: DialogKind; id: Id | null; name: string; open: boolea
 
 const FLASH_MS = 1600
 
+/**
+ * Runs once the open dialog has closed and Base UI has returned focus. When
+ * the dialog's trigger is disabled (Prodaj after the last piece) focus falls
+ * to the page; then it goes to `target()`. When the trigger is gone for sure
+ * (a deleted row), pass `always`: Base UI may otherwise pick some older element.
+ */
+function rescueFocus(target: () => HTMLElement | null | undefined, always = false) {
+  let frames = 0
+  const tick = () => {
+    if (document.querySelector('[data-slot="dialog-content"]') && ++frames < 120) {
+      requestAnimationFrame(tick)
+      return
+    }
+    const active = document.activeElement
+    if (always || !active || active === document.body) target()?.focus()
+  }
+  requestAnimationFrame(tick)
+}
+
 export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
   const { t, locale } = useApp()
   const state = useInventory()
@@ -40,6 +59,13 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
   const [dialog, setDialog] = useState<DialogState>({ kind: "create", id: null, name: "", open: false })
   // The row that just changed, briefly highlighted so the eye finds it.
   const [flash, setFlash] = useState<Id | null>(null)
+
+  // The newest data, for toast actions (undo) that run after their dialog is gone.
+  const latest = useRef(state)
+  useEffect(() => {
+    latest.current = state
+  })
+  const quantityOf = (id: Id) => latest.current?.articles.find((a) => a.id === id)?.quantity
 
   useEffect(() => {
     if (!flash) return
@@ -61,14 +87,13 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
       <Button
         variant="outline"
         size="cta"
-        className="rounded-full"
         disabled={!hasArticles}
         onClick={() => openDialog("receive")}
       >
         <PackagePlusIcon data-icon="inline-start" aria-hidden />
         {dict.actions.receive}
       </Button>
-      <Button variant="brand" size="cta" disabled={!state} onClick={() => openDialog("create")}>
+      <Button variant="primary" size="cta" disabled={!state} onClick={() => openDialog("create")}>
         <PlusIcon data-icon="inline-start" aria-hidden />
         {dict.actions.newArticle}
       </Button>
@@ -92,16 +117,29 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
   const counts = facetCounts(articles, filters)
 
   function remove(article: Article) {
+    const i = rows.findIndex((a) => a.id === article.id)
+    const neighbour = rows[i + 1] ?? rows[i - 1]
     const result = inventory.deleteArticle(article.id)
-    if (!result.ok) toast(t.errors[result.error], { tone: "error" })
-    else toast(dict.delete.done)
+    if (!result.ok) {
+      toast(t.errors[result.error], { tone: "error" })
+      return
+    }
+    toast(dict.delete.done)
+    // The row and its ⋯ are gone: continue on the next row (or the page).
+    rescueFocus(() => (neighbour && findArticleAction(neighbour.id)) ?? document.getElementById("main"), true)
+  }
+
+  // Selling the last piece disables Prodaj: continue on the article's next action (Prijem or ⋯).
+  function sold(id: Id) {
+    setFlash(id)
+    rescueFocus(() => findArticleAction(id))
   }
 
   return (
     <>
       <PageHeader title={dict.title} subtitle={dict.subtitle} actions={actions} />
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <InventorySummary
           totals={totalsOf(articles)}
           piecesInShipments={[...shipped.values()].reduce((sum, n) => sum + n, 0)}
@@ -128,7 +166,6 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
                     <Button
                       variant="outline"
                       size="cta"
-                      className="rounded-full"
                       onClick={() => setFilters({ ...initialFilters, sort: filters.sort })}
                     >
                       {dict.toolbar.clearFilters}
@@ -138,7 +175,7 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
               </Panel>
             ) : (
               <>
-                <Panel className="hidden overflow-hidden lg:block">
+                <Panel className="hidden overflow-clip xl:block">
                   <ArticleTable
                     rows={rows}
                     totals={totalsOf(rows)}
@@ -148,7 +185,7 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
                     onAction={onAction}
                   />
                 </Panel>
-                <div className="lg:hidden">
+                <div className="xl:hidden">
                   <ArticleCards
                     rows={rows}
                     totals={totalsOf(rows)}
@@ -168,7 +205,8 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
               title={dict.empty.title}
               description={dict.empty.description}
               action={
-                <Button variant="brand" size="cta" onClick={() => openDialog("create")}>
+                // The header already shows the lime "Novi artikal"; one lime button per view.
+                <Button variant="dark" size="cta" onClick={() => openDialog("create")}>
                   <PlusIcon data-icon="inline-start" aria-hidden />
                   {dict.actions.newArticle}
                 </Button>
@@ -193,8 +231,14 @@ export function InventoryPanel({ dict }: { dict: Dictionary["inventory"] }) {
         onSaved={setFlash}
       />
       <ReceiveDialog {...dialogProps("receive")} articles={articles} articleId={dialog.id} dict={dict} onSaved={setFlash} />
-      <SellDialog {...dialogProps("sell")} article={target} dict={dict} onSaved={setFlash} />
-      <AdjustDialog {...dialogProps("adjust")} article={target} dict={dict} onSaved={setFlash} />
+      <SellDialog {...dialogProps("sell")} article={target} dict={dict} onSaved={sold} />
+      <AdjustDialog
+        {...dialogProps("adjust")}
+        article={target}
+        dict={dict}
+        quantityOf={quantityOf}
+        onSaved={setFlash}
+      />
       <HistoryDialog {...dialogProps("history")} article={target} state={state} dict={dict} />
       <ConfirmDialog
         {...dialogProps("delete")}

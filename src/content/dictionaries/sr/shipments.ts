@@ -21,6 +21,7 @@ export const shipments = {
     returned: "Vraćeno",
     returnedHint: "{percent} od završenih pošiljki",
     returnedNone: "Nijedna pošiljka nije vraćena.",
+    cancelledHint: "Otkazano pre slanja: {n}",
   },
 
   filters: {
@@ -38,6 +39,10 @@ export const shipments = {
     cod: "Otkupnina",
     shipping: "Poštarina",
     tracking: "Praćenje",
+    noTracking: "još nije upisano",
+    buyerPaysShipping: "plaća kupac",
+    more: "Još radnji za pošiljku {code}",
+    moreShort: "Još radnji",
     actions: "Radnje za pošiljku {code}",
   },
 
@@ -59,7 +64,7 @@ export const shipments = {
     backToPending: "Vrati na „Za slanje“",
     undeliver: "Poništi leglo",
     copy: "Kopiraj podatke za kurira",
-    showSales: "Prikaži",
+    showSales: "Vidi u Prodatom",
   },
 
   toasts: {
@@ -109,7 +114,8 @@ export const shipments = {
     postalCode: "Poštanski broj",
     items: "Artikli",
     searchArticles: "Pretraži artikle na stanju",
-    noArticles: "Nema artikala na stanju. Prvo dodaj robu u Stanje.",
+    noArticles: "Na stanju nema ničega za slanje. Prvo dodaj robu u Stanje.",
+    toStock: "Idi na Stanje",
     onHand: "{pieces} na stanju",
     added: "Dodato: {n}",
     noLines: "Još nijedan artikal. Izaberi ga iz liste iznad.",
@@ -144,5 +150,6 @@ export const shipments = {
     filteredTitle: "Ništa ne odgovara",
     filteredText: "Nijedna pošiljka ne odgovara ovom statusu ili pretrazi.",
     showAll: "Prikaži sve",
+    noStockText: "Na stanju još nema robe. Dodaj artikle u Stanje, pa ovde napravi pošiljku.",
   },
 }

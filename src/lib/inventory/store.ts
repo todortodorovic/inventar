@@ -98,6 +98,9 @@ export const inventory = {
 
   deleteArticle: (id: Id) => dispatch({ type: "article/delete", id }),
 
+  /** Undo of creating an article; refused once it has been received, sold, packed or counted. */
+  undoCreateArticle: (id: Id) => dispatch({ type: "article/delete", id, undoCreate: true }),
+
   /** Prijem: `quantity` more pieces at `unitPurchasePrice` each. */
   receiveStock: (articleId: Id, quantity: number, unitPurchasePrice: number, note = "") =>
     dispatch({ type: "stock/receive", articleId, ...stamp(), quantity, unitPurchasePrice, note }),

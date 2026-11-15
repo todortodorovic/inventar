@@ -4,7 +4,7 @@ import { cn } from "cn"
 
 function Button({
   className,
-  variant = "default",
+  variant = "dark",
   size = "default",
   ...props
 }: ButtonPrimitive.Props & ButtonVariantProps) {

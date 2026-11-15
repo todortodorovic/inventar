@@ -26,15 +26,15 @@ export function LowStock({ dict, articles }: { dict: Dictionary["overview"]["low
       {articles.length === 0 ? (
         <PanelEmpty>{dict.empty}</PanelEmpty>
       ) : (
-        <div className="px-5 pt-3 pb-5 sm:px-6">
-          <ul className="flex flex-col divide-y divide-line">
+        <div className="px-4 pt-2 pb-4 sm:px-5">
+          <ul className="flex flex-col divide-y divide-hairline">
             {articles.slice(0, SHOWN).map((a) => {
               const level = stockLevel(a)
               return (
-                <li key={a.id} className="flex min-h-14 items-center gap-3 py-2.5">
+                <li key={a.id} className="flex min-h-13 items-center gap-3 py-2.5">
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[15px] font-medium">{a.name}</span>
-                    <span className="truncate text-[12px] text-ink-muted tabular-nums">
+                    <span className="truncate text-[13.5px] font-medium">{a.name}</span>
+                    <span className="truncate text-[12px] text-fg-muted tabular-nums">
                       {[a.category, level === "low" && fill(dict.left, { pieces: plural(t.units.pieces, a.quantity, locale) })]
                         .filter(Boolean)
                         .join(" · ")}
@@ -45,7 +45,7 @@ export function LowStock({ dict, articles }: { dict: Dictionary["overview"]["low
               )
             })}
           </ul>
-          {rest > 0 && <p className="pt-3 text-[13px] text-ink-muted">{plural(dict.more, rest, locale)}</p>}
+          {rest > 0 && <p className="border-t border-hairline pt-3 text-[12.5px] text-fg-muted">{plural(dict.more, rest, locale)}</p>}
         </div>
       )}
     </Panel>

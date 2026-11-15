@@ -12,6 +12,13 @@ export const overview: Dictionary["overview"] = {
     "12m": "12 months",
     all: "All",
   },
+  periodShort: {
+    "7d": "7 days",
+    "30d": "30 days",
+    "3m": "3 mo.",
+    "12m": "12 mo.",
+    all: "All",
+  },
   vsPrevious: {
     "7d": "vs. the previous 7 days",
     "30d": "vs. the previous 30 days",
@@ -52,8 +59,8 @@ export const overview: Dictionary["overview"] = {
     costHint: "at cost · {pieces}",
     expectedProfit: "Expected profit",
     expectedProfitHint: "if everything sells for {value}",
-    onTheWay: "On the way",
-    onTheWayHint: "cash on delivery · {pending} to send, {sent} sent",
+    shipments: "Open shipments",
+    shipmentsHint: "cash on delivery · {pending} to send, {sent} sent",
     lowStock: "Running low",
     lowStockHint: "{out} out, {low} low",
     lowStockNone: "everything is in stock",
@@ -62,10 +69,11 @@ export const overview: Dictionary["overview"] = {
 
   chart: {
     title: "Revenue and profit by month",
-    description: "Net profit: after cost of goods and postage. Highlighted months fall in the selected period.",
+    description: "Net profit: after cost of goods and postage. Months in the selected period are marked by a band.",
     descriptionShort: "Net profit: after cost of goods and postage.",
     revenue: "Revenue",
     profit: "Net profit",
+    thisMonth: "This month · {month}",
     view: "View",
     viewChart: "Chart",
     viewTable: "Table",
@@ -78,7 +86,7 @@ export const overview: Dictionary["overview"] = {
 
   categories: {
     title: "Profit by category",
-    description: "Margin on goods in the selected period, before postage.",
+    description: "Profit on goods in the selected period, before postage.",
     uncategorized: "Uncategorised",
     share: "{share} of profit",
     empty: "No sales in this period.",
@@ -92,13 +100,13 @@ export const overview: Dictionary["overview"] = {
   },
 
   pipeline: {
-    title: "Parcels",
+    title: "Shipments",
     description: "Packed in the selected period, plus every one still under way.",
     total: "total",
     cod: "cash on delivery",
-    link: "All parcels",
-    barLabel: "Parcels by status",
-    empty: "No parcels in this period.",
+    link: "All shipments",
+    barLabel: "Shipments by status",
+    empty: "No shipments in this period.",
   },
 
   lowStock: {
@@ -112,13 +120,13 @@ export const overview: Dictionary["overview"] = {
 
   activity: {
     title: "Recent activity",
-    description: "Sales and parcel status changes.",
+    description: "Sales and shipment status changes.",
     sale: "Sold: {name}",
     shipment: {
-      pending: "Parcel {code} packed",
-      sent: "Parcel {code} sent",
-      delivered: "Parcel {code} delivered",
-      returned: "Parcel {code} returned",
+      pending: "Shipment {code} packed",
+      sent: "Shipment {code} sent",
+      delivered: "Shipment {code} delivered",
+      returned: "Shipment {code} returned",
     },
     walkIn: "Walk-in customer",
     empty: "No activity yet.",
@@ -127,7 +135,7 @@ export const overview: Dictionary["overview"] = {
   empty: {
     title: "No data yet",
     description:
-      "Add your first items under Stock and sales, profit and parcels will show up here. You can restore the demo data from the Demo chip in the header.",
+      "Add your first items under Stock and sales, profit and shipments will show up here. You can restore the demo data with the Demo button.",
     action: "Go to stock",
   },
 }

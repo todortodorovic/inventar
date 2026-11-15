@@ -1,17 +1,9 @@
 import type { ComponentProps, ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-/** The white card every block of content sits on (Catena's 24px card). */
+/** The white card every block of content sits on: 12px corners, a hairline, a breath of shadow. */
 export function Panel({ className, ...props }: ComponentProps<"section">) {
-  return (
-    <section
-      className={cn(
-        "rounded-(--radius-card) border border-line bg-card shadow-[0_1px_2px_rgb(22_22_26/0.04),0_18px_40px_-30px_rgb(22_22_26/0.25)]",
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <section className={cn("rounded-(--radius-card) border border-hairline bg-card shadow-card", className)} {...props} />
 }
 
 /** Title row inside a panel, with optional actions on the right. */
@@ -27,12 +19,12 @@ export function PanelHeader({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-wrap items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6", className)}>
+    <div className={cn("flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 sm:flex-nowrap sm:px-5 sm:pt-5", className)}>
       <div className="min-w-0">
-        <h2 className="font-display text-[19px] leading-tight font-semibold tracking-[-0.02em]">{title}</h2>
-        {description && <p className="mt-1 text-sm text-ink-muted">{description}</p>}
+        <h2 className="type-heading">{title}</h2>
+        {description && <p className="mt-0.5 text-[13px] text-fg-muted">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>
   )
 }

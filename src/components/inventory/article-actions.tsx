@@ -1,6 +1,5 @@
 "use client"
 
-import { Menu } from "@base-ui/react/menu"
 import {
   ClipboardCheckIcon,
   EllipsisIcon,
@@ -10,16 +9,25 @@ import {
   PencilIcon,
   Trash2Icon,
   TruckIcon,
-  type LucideIcon,
 } from "lucide-react"
 import Link from "next/link"
-import type { ReactNode } from "react"
 import { useApp } from "@/components/app/app-provider"
 import { Button } from "@/components/ui/button"
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuLabel,
+  MenuLinkItem,
+  MenuSeparator,
+  MenuTrigger,
+  useAfterMenuCloses,
+} from "@/components/ui/menu"
 import { localePath } from "@/config/site"
 import type { Dictionary } from "@/content/types"
 import { fill } from "@/lib/format"
-import type { Article } from "@/lib/inventory/types"
+import type { Article, Id } from "@/lib/inventory/types"
 import { cn } from "@/lib/utils"
 
 export type ArticleAction = "sell" | "receive" | "edit" | "adjust" | "history" | "delete"
@@ -28,20 +36,60 @@ type Props = {
   article: Article
   dict: Dictionary["inventory"]
   onAction: (action: ArticleAction, article: Article) => void
-  /** `row`: compact, for the desktop table. `card`: full-width 40px targets for phones. */
-  layout: "row" | "card"
 }
 
-/** Sell and receive up front; everything else in the ⋯ menu. */
-export function ArticleActions({ article, dict, onAction, layout }: Props) {
-  const card = layout === "card"
-  const button = card ? "h-10 flex-1 rounded-full text-[14px]" : "h-8 rounded-full px-3 text-[13px]"
+/**
+ * The first enabled button among an article's own actions (its table row or
+ * its card, whichever is on screen), to put focus back there after a dialog.
+ */
+export function findArticleAction(id: Id): HTMLElement | undefined {
+  const boxes = document.querySelectorAll<HTMLElement>(`[data-article-actions="${CSS.escape(id)}"]`)
+  for (const box of boxes) {
+    if (box.getClientRects().length === 0) continue
+    const button = box.querySelector<HTMLElement>("button:not(:disabled)")
+    if (button) return button
+  }
+}
+
+/**
+ * The actions in a desktop table row: one button, everything else in the ⋯
+ * menu so the Artikal column keeps its width. The button is Prodaj, or Prijem
+ * when nothing is left to sell (then Prijem leaves the menu). It stays the
+ * same element, so focus stays on it after the last piece is sold.
+ */
+export function ArticleRowActions({ article, dict, onAction }: Props) {
+  const soldOut = article.quantity === 0
   return (
-    <div className={cn("flex items-center", card ? "gap-2" : "justify-end gap-1")}>
+    <div className="flex items-center justify-end gap-1" data-article-actions={article.id}>
       <Button
         variant="outline"
-        className={cn(button, "gap-1.5 font-semibold")}
-        disabled={article.quantity === 0}
+        className="h-8 gap-1.5 px-2.5 text-[13px]"
+        onClick={() => onAction(soldOut ? "receive" : "sell", article)}
+        aria-label={fill(soldOut ? dict.actions.receiveLabel : dict.actions.sellLabel, { name: article.name })}
+      >
+        {soldOut ? <PackagePlusIcon aria-hidden /> : <HandCoinsIcon aria-hidden />}
+        {soldOut ? dict.actions.receiveShort : dict.actions.sell}
+      </Button>
+      <ArticleMenu article={article} dict={dict} onAction={onAction} withReceive={!soldOut} />
+    </div>
+  )
+}
+
+/**
+ * The actions under a phone card: Prodaj and Prijem as a full-width 50/50
+ * pair of 44px targets. Prodaj is the card's primary (graphite); with nothing
+ * on the shelf it is disabled and Prijem, the only useful step, takes the
+ * graphite. The rest lives in the ⋯ menu in the card's corner (`ArticleMenu size="lg"`).
+ */
+export function ArticleCardActions({ article, dict, onAction }: Props) {
+  const soldOut = article.quantity === 0
+  const button = "h-11 w-full gap-2 text-[14px]"
+  return (
+    <div className="grid grid-cols-2 gap-2" data-article-actions={article.id}>
+      <Button
+        variant={soldOut ? "outline" : "dark"}
+        className={button}
+        disabled={soldOut}
         onClick={() => onAction("sell", article)}
         aria-label={fill(dict.actions.sellLabel, { name: article.name })}
       >
@@ -49,100 +97,95 @@ export function ArticleActions({ article, dict, onAction, layout }: Props) {
         {dict.actions.sell}
       </Button>
       <Button
-        variant="ghost"
-        className={cn(button, "gap-1.5 font-semibold", card && "bg-sand")}
+        variant={soldOut ? "dark" : "outline"}
+        className={button}
         onClick={() => onAction("receive", article)}
         aria-label={fill(dict.actions.receiveLabel, { name: article.name })}
       >
         <PackagePlusIcon aria-hidden />
-        {/* Icon only in a tight table; the aria-label still names it. */}
-        <span className={card ? undefined : "hidden xl:inline"}>{dict.actions.receiveShort}</span>
+        {dict.actions.receiveShort}
       </Button>
-      <ArticleMenu article={article} dict={dict} onAction={onAction} large={card} />
     </div>
   )
 }
 
-const itemClass =
-  "flex min-h-10 cursor-default items-center gap-2.5 rounded-xl px-3 text-[14px] font-medium outline-none select-none data-disabled:opacity-45 data-highlighted:bg-ink/6 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-muted"
-
-function Item({
-  icon: Icon,
-  children,
-  onClick,
-  disabled,
-  destructive,
-}: {
-  icon: LucideIcon
-  children: ReactNode
-  onClick: () => void
-  disabled?: boolean
-  destructive?: boolean
-}) {
-  return (
-    <Menu.Item
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(itemClass, destructive && "text-destructive [&_svg]:text-destructive data-highlighted:bg-destructive/8")}
-    >
-      <Icon aria-hidden />
-      {children}
-    </Menu.Item>
-  )
-}
-
-function ArticleMenu({
+/** The ⋯ menu: its trigger names the article; the open menu shows it as a heading. */
+export function ArticleMenu({
   article,
   dict,
   onAction,
-  large,
-}: Omit<Props, "layout"> & { large: boolean }) {
+  withReceive = false,
+  size = "md",
+  className,
+}: Props & {
+  /** Desktop rows show Prijem as a button only when sold out; otherwise it leads the menu. */
+  withReceive?: boolean
+  /** `lg`: a 44px target for phone cards. */
+  size?: "md" | "lg"
+  className?: string
+}) {
   const { t, locale } = useApp()
+  // Every item opens a dialog: wait for the menu to close so focus comes back to ⋯.
+  const { later, onOpenChangeComplete } = useAfterMenuCloses<ArticleAction>((action) => onAction(action, article))
   // The shipments section reads `?new=` and opens a new shipment with this article in it.
   const shipHref = `${localePath(locale, "shipments")}?new=${encodeURIComponent(article.id)}`
   return (
-    <Menu.Root>
-      <Menu.Trigger
+    <Menu onOpenChangeComplete={onOpenChangeComplete}>
+      <MenuTrigger
         render={
           <Button
             variant="ghost"
             size="icon"
-            className={cn("rounded-full", large ? "size-10 bg-sand" : "size-8")}
+            className={cn(
+              size === "lg" ? "size-11 rounded-lg text-fg-muted" : "size-8 text-fg-muted",
+              className,
+            )}
             aria-label={fill(dict.actions.moreLabel, { name: article.name })}
           />
         }
       >
-        <EllipsisIcon className="size-[18px]" aria-hidden />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={6} className="z-50 outline-none">
-          <Menu.Popup className="min-w-[210px] origin-(--transform-origin) rounded-2xl border border-line bg-popover p-1.5 shadow-[0_18px_44px_-16px_rgb(22_22_26/0.35)] outline-none transition-[opacity,scale] duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
-            <Item icon={PencilIcon} onClick={() => onAction("edit", article)}>
-              {t.actions.edit}
-            </Item>
-            <Item icon={ClipboardCheckIcon} onClick={() => onAction("adjust", article)}>
-              {dict.actions.adjust}
-            </Item>
-            <Item icon={HistoryIcon} onClick={() => onAction("history", article)}>
-              {dict.actions.history}
-            </Item>
-            {article.quantity > 0 ? (
-              <Menu.LinkItem render={<Link href={shipHref} />} closeOnClick className={itemClass}>
-                <TruckIcon aria-hidden />
-                {dict.actions.ship}
-              </Menu.LinkItem>
-            ) : (
-              <Item icon={TruckIcon} onClick={() => {}} disabled>
-                {dict.actions.ship}
-              </Item>
-            )}
-            <Menu.Separator className="mx-2 my-1 h-px bg-line" />
-            <Item icon={Trash2Icon} onClick={() => onAction("delete", article)} destructive>
-              {t.actions.delete}
-            </Item>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+        <EllipsisIcon className={size === "lg" ? "size-5" : "size-[18px]"} aria-hidden />
+      </MenuTrigger>
+      <MenuContent>
+        <MenuGroup>
+          <MenuLabel>{article.name}</MenuLabel>
+          {withReceive && (
+            <MenuItem onClick={() => later("receive")}>
+              <PackagePlusIcon aria-hidden />
+              {dict.actions.receive}
+            </MenuItem>
+          )}
+          {article.quantity > 0 ? (
+            <MenuLinkItem render={<Link href={shipHref} />} closeOnClick>
+              <TruckIcon aria-hidden />
+              {dict.actions.ship}
+            </MenuLinkItem>
+          ) : (
+            <MenuItem disabled>
+              <TruckIcon aria-hidden />
+              {dict.actions.ship}
+            </MenuItem>
+          )}
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuItem onClick={() => later("edit")}>
+          <PencilIcon aria-hidden />
+          {t.actions.edit}
+        </MenuItem>
+        <MenuItem onClick={() => later("adjust")}>
+          <ClipboardCheckIcon aria-hidden />
+          {dict.actions.adjust}
+        </MenuItem>
+        <MenuItem onClick={() => later("history")}>
+          <HistoryIcon aria-hidden />
+          {dict.actions.history}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem variant="destructive" onClick={() => later("delete")}>
+          <Trash2Icon aria-hidden />
+          {t.actions.delete}
+        </MenuItem>
+      </MenuContent>
+    </Menu>
   )
 }

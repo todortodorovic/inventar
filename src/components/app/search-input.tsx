@@ -21,7 +21,7 @@ export function SearchInput({
 }) {
   return (
     <div className={cn("relative min-w-0", className)}>
-      <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-faint" aria-hidden />
+      <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-faint" aria-hidden />
       <input
         type="search"
         value={value}
@@ -29,16 +29,16 @@ export function SearchInput({
         placeholder={placeholder}
         aria-label={placeholder}
         autoFocus={autoFocus}
-        className="h-10 w-full min-w-0 rounded-full border border-input bg-white pr-10 pl-10 text-base transition-colors outline-none placeholder:text-ink-faint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full min-w-0 rounded-md border border-input bg-surface pr-9 pl-9 text-base shadow-xs transition-[border-color,box-shadow] outline-none placeholder:text-fg-faint hover:border-fg-faint/40 focus-visible:border-fg-soft focus-visible:ring-3 focus-visible:ring-fg/10 md:h-9 md:text-[13.5px] [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-label={clearLabel}
-          className="absolute top-1/2 right-2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-ink-muted transition-colors hover:bg-ink/6 hover:text-ink"
+          className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-sm text-fg-muted transition-colors outline-none hover:bg-sunken hover:text-fg focus-visible:outline-2 focus-visible:outline-ring md:size-6"
         >
-          <XIcon className="size-4" />
+          <XIcon className="size-3.5" />
         </button>
       )}
     </div>

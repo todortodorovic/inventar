@@ -13,6 +13,14 @@ export const overview = {
     "12m": "12 meseci",
     all: "Sve",
   },
+  /** The same periods, short enough for the segmented control on a 390px phone. */
+  periodShort: {
+    "7d": "7 dana",
+    "30d": "30 dana",
+    "3m": "3 mes.",
+    "12m": "12 mes.",
+    all: "Sve",
+  },
   /** Under each KPI: what the change is measured against. */
   vsPrevious: {
     "7d": "u odnosu na prethodnih 7 dana",
@@ -20,7 +28,7 @@ export const overview = {
     "3m": "u odnosu na prethodna 3 meseca",
     "12m": "u odnosu na prethodnih 12 meseci",
   },
-  /** Mono labels above the two tile rows. */
+  /** Overline labels above the two tile rows. */
   groups: {
     period: {
       "7d": "Poslednjih 7 dana",
@@ -56,8 +64,9 @@ export const overview = {
     costHint: "po nabavnoj ceni · {pieces}",
     expectedProfit: "Očekivani profit",
     expectedProfitHint: "ako se sve proda za {value}",
-    onTheWay: "Na putu",
-    onTheWayHint: "pouzećem · {pending} za slanje, {sent} poslato",
+    /** Every shipment not yet delivered or returned; "Na putu" is only the sent ones (Pošiljke). */
+    shipments: "Pošiljke u toku",
+    shipmentsHint: "pouzećem · {pending} za slanje, {sent} poslato",
     lowStock: "Pri kraju",
     lowStockHint: "{out} nema, {low} pri kraju",
     lowStockNone: "sve je na stanju",
@@ -66,10 +75,12 @@ export const overview = {
 
   chart: {
     title: "Prihod i profit po mesecima",
-    description: "Neto profit: posle nabavne cene i poštarine. Istaknuti meseci su u izabranom periodu.",
+    description: "Neto profit: posle nabavne cene i poštarine. Meseci izabranog perioda su označeni pozadinom.",
     descriptionShort: "Neto profit: posle nabavne cene i poštarine.",
     revenue: "Prihod",
     profit: "Neto profit",
+    /** Over the figures above the chart: which month they are for (the latest one unless hovered). */
+    thisMonth: "Ovaj mesec · {month}",
     view: "Prikaz",
     viewChart: "Grafikon",
     viewTable: "Tabela",
@@ -136,7 +147,7 @@ export const overview = {
   empty: {
     title: "Još nema podataka",
     description:
-      "Dodaj prve artikle u Stanju i ovde će se pojaviti prodaja, profit i pošiljke. Demo podatke možeš da vratiš preko oznake Demo u zaglavlju.",
+      "Dodaj prve artikle u Stanju i ovde će se pojaviti prodaja, profit i pošiljke. Demo podatke možeš da vratiš preko dugmeta Demo.",
     action: "Idi na stanje",
   },
 }

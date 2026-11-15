@@ -1,18 +1,21 @@
 "use client"
 
-import { DatabaseZapIcon, RotateCcwIcon, Trash2Icon } from "lucide-react"
+import { ChevronsUpDownIcon, DatabaseZapIcon, RotateCcwIcon, Trash2Icon } from "lucide-react"
 import { useState } from "react"
 import { useApp } from "@/components/app/app-provider"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { inventory } from "@/lib/inventory/store"
 import { toast } from "@/lib/toast"
+import { cn } from "@/lib/utils"
 
 /**
- * The "Demo" chip in the header: explains that data lives only in this tab,
- * and lets the visitor restore the demo data or start empty.
+ * The "Demo" control (phone top bar: a light chip, 40px tall on phones;
+ * graphite sidebar: a full-width row):
+ * explains that data lives only in this tab, and lets the visitor restore
+ * the demo data or start empty.
  */
-export function DemoMenu() {
+export function DemoMenu({ layout = "chip" }: { layout?: "chip" | "row" }) {
   const { t } = useApp()
   const [open, setOpen] = useState(false)
   const [confirm, setConfirm] = useState<"reset" | "clear" | null>(null)
@@ -37,19 +40,25 @@ export function DemoMenu() {
         render={
           <button
             type="button"
-            className="flex items-center gap-2 rounded-full border border-line-strong bg-white px-3 py-[7px] font-mono text-[11px] font-semibold tracking-[0.14em] text-ink-soft uppercase transition-colors hover:text-ink"
+            className={cn(
+              "flex items-center gap-2 rounded-lg text-[12.5px] font-semibold transition-colors outline-none focus-visible:outline-2",
+              layout === "row"
+                ? "h-[34px] min-w-0 flex-1 px-2.5 text-sidebar-fg-muted hover:bg-graphite-800 hover:text-sidebar-fg focus-visible:outline-offset-0 focus-visible:outline-accent-on-dark"
+                : "h-10 border border-hairline-strong bg-surface px-2.5 text-fg-soft shadow-xs hover:border-fg-faint/40 hover:text-fg focus-visible:outline-offset-2 focus-visible:outline-ring md:h-[34px]",
+            )}
           />
         }
       >
-        <span className="relative flex size-2" aria-hidden>
-          <span className="absolute inset-0 animate-ping rounded-full bg-pop/60 motion-reduce:hidden" />
-          <span className="relative size-2 rounded-full bg-pop" />
+        <span className="relative grid size-2 place-items-center" aria-hidden>
+          <span className="absolute size-2.5 rounded-full bg-status-pending/30" />
+          <span className="size-1.5 rounded-full bg-status-pending" />
         </span>
-        {t.demo.badge}
+        <span className="truncate">{t.demo.badge}</span>
+        {layout === "row" && <ChevronsUpDownIcon className="ml-auto size-3.5 shrink-0 text-sidebar-fg-faint" aria-hidden />}
       </DialogTrigger>
       <DialogContent closeLabel={t.actions.close} className="sm:max-w-md">
         <DialogHeader>
-          <span className="mb-2 grid size-11 place-items-center rounded-2xl bg-sand text-ink">
+          <span className="mb-2 grid size-10 place-items-center rounded-lg bg-sunken text-fg-soft ring-1 ring-hairline ring-inset">
             <DatabaseZapIcon className="size-5" aria-hidden />
           </span>
           <DialogTitle>{t.demo.badge}</DialogTitle>
@@ -57,16 +66,15 @@ export function DemoMenu() {
         </DialogHeader>
 
         {confirm ? (
-          <div className="flex flex-col gap-3 rounded-2xl bg-sand p-4">
-            <p className="text-[15px] text-ink-soft">{confirm === "reset" ? t.demo.confirmReset : t.demo.confirmClear}</p>
+          <div className="flex flex-col gap-3 rounded-lg border border-hairline bg-sunken p-4">
+            <p className="text-sm text-fg-soft">{confirm === "reset" ? t.demo.confirmReset : t.demo.confirmClear}</p>
             <div className="flex flex-wrap justify-end gap-2">
-              <Button variant="ghost" size="cta" className="rounded-full" onClick={() => setConfirm(null)}>
+              <Button variant="ghost" size="cta" onClick={() => setConfirm(null)}>
                 {t.actions.cancel}
               </Button>
               <Button
-                variant={confirm === "clear" ? "destructive" : "brand"}
+                variant={confirm === "clear" ? "destructive" : "primary"}
                 size="cta"
-                className="rounded-full"
                 onClick={() => run(confirm)}
               >
                 {t.actions.confirm}
@@ -75,11 +83,11 @@ export function DemoMenu() {
           </div>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" size="cta" className="flex-1 rounded-full" onClick={() => setConfirm("reset")}>
+            <Button variant="outline" size="cta" className="sm:flex-1" onClick={() => setConfirm("reset")}>
               <RotateCcwIcon data-icon="inline-start" />
               {t.demo.reset}
             </Button>
-            <Button variant="destructive" size="cta" className="flex-1 rounded-full" onClick={() => setConfirm("clear")}>
+            <Button variant="destructive" size="cta" className="sm:flex-1" onClick={() => setConfirm("clear")}>
               <Trash2Icon data-icon="inline-start" />
               {t.demo.clear}
             </Button>

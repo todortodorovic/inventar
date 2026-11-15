@@ -13,6 +13,12 @@ export const common = {
     shipments: "Pošiljke",
     sales: "Prodato",
     languageLabel: "Jezik",
+    skipToContent: "Preskoči na sadržaj",
+  },
+  /** Each language named in itself (the SR / EN switch reads these out). */
+  languages: {
+    sr: "Srpski",
+    en: "English",
   },
   demo: {
     badge: "Demo",
@@ -98,12 +104,25 @@ export const common = {
     "insufficient-stock": "Nema dovoljno komada na stanju.",
     "invalid-transition": "Ova promena statusa nije moguća.",
     "article-in-shipment": "Artikal je u pošiljci koja još nije završena.",
+    "article-changed": "Artikal je u međuvremenu korišćen, pa dodavanje ne može da se poništi.",
   },
   validation: {
     required: "Obavezno polje.",
     wholeNumber: "Unesi ceo broj.",
     min: "Najmanje {min}.",
     max: "Najviše {max}.",
+  },
+  /** The toast stack (`Toaster`). */
+  toasts: {
+    label: "Obaveštenja",
+    /** Read after a toast that has an action (Undo). */
+    actionHint: "Alt+T vodi do dugmeta.",
+  },
+  /** The 404 page. */
+  notFound: {
+    title: "Stranica ne postoji",
+    description: "Adresa je pogrešna ili je stranica uklonjena. Tvoji podaci su i dalje tu.",
+    back: "Nazad na pregled",
   },
   loading: "Učitavanje…",
 }

@@ -1,33 +1,45 @@
 import { siteConfig, type Locale } from "@/config/site"
+import { periodRange as statsPeriodRange, type DateRange } from "@/lib/inventory/stats"
 
-export const periods = ["month", "lastMonth", "quarter", "year", "all"] as const
+export { inRange } from "@/lib/inventory/stats"
+
+/** Calendar periods plus the rolling "30d" / "3m" ones shared with Pregled. */
+export const periods = ["month", "lastMonth", "30d", "3m", "year", "all"] as const
 export type Period = (typeof periods)[number]
 
-/** `[from, to)` in local time; `null` ends are open. */
-export type Range = { from: Date | null; to: Date | null }
-
-/** The period's range around `now`, in the seller's local time (months start at local midnight). */
-export function periodRange(period: Period, now: Date): Range {
+/**
+ * The period's range around `now`, in the seller's local time, as the same
+ * `DateRange` the overview uses. The rolling periods come straight from
+ * `stats.ts`, so "Poslednjih 30 dana" / "Poslednja 3 meseca" cover the same
+ * days (and show the same totals) on Pregled and here.
+ */
+export function periodRange(period: Period, now: Date): DateRange {
+  if (period === "30d" || period === "3m" || period === "all") return statsPeriodRange(period, now).current
+  // Every range ends where the overview's do: at the end of today.
+  const { end } = statsPeriodRange("all", now).current
   const y = now.getFullYear()
   const m = now.getMonth()
   switch (period) {
     case "month":
-      return { from: new Date(y, m, 1), to: null }
+      return { start: new Date(y, m, 1).getTime(), end }
     case "lastMonth":
-      return { from: new Date(y, m - 1, 1), to: new Date(y, m, 1) }
-    case "quarter":
-      // Rolling: from this day three months ago (Date clamps 31 → next month's start, which is fine).
-      return { from: new Date(y, m - 3, now.getDate()), to: null }
+      return { start: new Date(y, m - 1, 1).getTime(), end: new Date(y, m, 1).getTime() }
     case "year":
-      return { from: new Date(y, 0, 1), to: null }
-    case "all":
-      return { from: null, to: null }
+      return { start: new Date(y, 0, 1).getTime(), end }
   }
 }
 
-export function inRange(iso: string, { from, to }: Range) {
-  const t = new Date(iso).getTime()
-  return (!from || t >= from.getTime()) && (!to || t < to.getTime())
+/**
+ * The period's label on phones, where all six must fit at 390px: the calendar
+ * periods name their month or year („Nov“, „Okt“, „2026“), the rolling ones
+ * use the dictionary's short words.
+ */
+export function periodShortLabel(period: Period, now: Date, locale: Locale, short: Record<"30d" | "3m" | "all", string>) {
+  if (period === "year") return String(now.getFullYear())
+  if (period !== "month" && period !== "lastMonth") return short[period]
+  const month = new Date(now.getFullYear(), now.getMonth() - (period === "lastMonth" ? 1 : 0), 1)
+  const name = formatter("month", locale, { month: "short" }).format(month)
+  return name.charAt(0).toLocaleUpperCase(siteConfig.localeTags[locale]) + name.slice(1)
 }
 
 /** Local calendar day of an ISO time, `yyyy-mm-dd`: groups sales by the seller's day, not UTC's. */

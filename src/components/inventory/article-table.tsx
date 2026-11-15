@@ -7,12 +7,13 @@ import { formatMoney, formatPercent, plural } from "@/lib/format"
 import { expectedProfit } from "@/lib/inventory/selectors"
 import type { Article, Id } from "@/lib/inventory/types"
 import { cn } from "@/lib/utils"
-import { ArticleActions, type ArticleAction } from "./article-actions"
+import { ArticleRowActions, type ArticleAction } from "./article-actions"
 import { ArticleIdentity, StockInfo, UnitProfit } from "./article-cells"
 import type { Totals } from "./filters"
+import { profitText } from "@/components/app/money"
 
-const head = "h-11 px-3 font-mono text-[11px] font-medium tracking-[0.14em] text-ink-muted uppercase first:pl-6 last:pr-6"
-const cell = "px-3 py-3.5 first:pl-6 last:pr-6"
+const head = "sticky top-0 z-10 h-10 bg-surface-subtle/95 px-3 backdrop-blur-sm first:pl-5 last:pr-4"
+const cell = "px-3 py-3 first:pl-5 last:pr-4"
 const num = "text-right tabular-nums"
 
 /** Desktop list: one row per article and a totals row for what is shown. */
@@ -34,11 +35,11 @@ export function ArticleTable({
   const { t, locale } = useApp()
   const avgMargin = totals.value > 0 ? totals.profit / totals.value : null
   return (
-    <Table className="min-w-[940px]">
+    <Table className="min-w-[920px]" containerClassName="overflow-x-clip">
       <caption className="sr-only">{dict.table.caption}</caption>
       <TableHeader>
-        <TableRow className="border-line hover:bg-transparent">
-          <TableHead className={head}>{dict.table.article}</TableHead>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className={cn(head, "w-[30%]")}>{dict.table.article}</TableHead>
           <TableHead className={head}>{dict.table.stock}</TableHead>
           <TableHead className={cn(head, "text-right")}>{dict.table.purchase}</TableHead>
           <TableHead className={cn(head, "text-right")}>{dict.table.sale}</TableHead>
@@ -56,17 +57,17 @@ export function ArticleTable({
             <TableRow
               key={a.id}
               className={cn(
-                "border-line transition-colors duration-700 hover:bg-cream/70",
-                flash === a.id && "bg-highlight/25 duration-0 hover:bg-highlight/25",
+                "duration-700",
+                flash === a.id && "bg-accent-soft duration-0 hover:bg-accent-soft [&>td:first-child]:shadow-[inset_3px_0_0_var(--accent-edge)]",
               )}
             >
-              <TableCell className={cn(cell, "min-w-[220px] whitespace-normal")}>
+              <TableCell className={cn(cell, "min-w-[260px] whitespace-normal")}>
                 <ArticleIdentity article={a} />
               </TableCell>
               <TableCell className={cell}>
                 <StockInfo article={a} inShipments={inShipments.get(a.id) ?? 0} dict={dict} />
               </TableCell>
-              <TableCell className={cn(cell, num, "text-ink-soft")}>{formatMoney(a.purchasePrice, locale)}</TableCell>
+              <TableCell className={cn(cell, num, "text-fg-muted")}>{formatMoney(a.purchasePrice, locale)}</TableCell>
               <TableCell className={cn(cell, num, "font-medium")}>{formatMoney(a.salePrice, locale)}</TableCell>
               <TableCell className={cn(cell, num)}>
                 <UnitProfit article={a} dict={dict} className="items-end" />
@@ -75,24 +76,24 @@ export function ArticleTable({
                 className={cn(
                   cell,
                   num,
-                  "font-display text-base font-bold tracking-[-0.02em]",
-                  expected > 0 ? "text-gain" : expected < 0 ? "text-loss" : "text-ink-faint",
+                  "text-[14px] font-semibold tracking-[-0.01em]",
+                  profitText(expected, "text-fg-faint"),
                 )}
               >
                 {formatMoney(expected, locale)}
               </TableCell>
               <TableCell className={cell}>
-                <ArticleActions article={a} dict={dict} onAction={onAction} layout="row" />
+                <ArticleRowActions article={a} dict={dict} onAction={onAction} />
               </TableCell>
             </TableRow>
           )
         })}
       </TableBody>
-      <TableFooter className="border-line bg-sand/70">
+      <TableFooter>
         <TableRow className="hover:bg-transparent">
           <TableCell className={cn(cell, "py-4")}>
-            <p className="font-display text-[15px] font-bold">{dict.table.totals}</p>
-            <p className="text-[13px] text-ink-muted">{plural(t.units.articles, totals.articles, locale)}</p>
+            <p className="font-semibold">{dict.table.totals}</p>
+            <p className="text-[12px] font-normal text-fg-muted">{plural(t.units.articles, totals.articles, locale)}</p>
           </TableCell>
           <TableCell className={cn(cell, "py-4 font-semibold tabular-nums")}>
             {plural(t.units.pieces, totals.pieces, locale)}
@@ -107,8 +108,8 @@ export function ArticleTable({
             className={cn(
               cell,
               num,
-              "py-4 font-display text-lg font-bold tracking-[-0.02em]",
-              totals.profit > 0 ? "text-gain" : totals.profit < 0 && "text-loss",
+              "py-4 text-[15px] font-semibold tracking-[-0.01em]",
+              profitText(totals.profit, ""),
             )}
           >
             {formatMoney(totals.profit, locale)}
@@ -123,8 +124,8 @@ export function ArticleTable({
 function FooterFigure({ label, value }: { label: string; value: string }) {
   return (
     <TableCell className={cn(cell, num, "py-4")}>
-      <p className="font-semibold">{value}</p>
-      <p className="text-[12px] font-normal text-ink-muted">{label}</p>
+      <p className="font-semibold tabular-nums">{value}</p>
+      <p className="text-[12px] font-normal text-fg-muted">{label}</p>
     </TableCell>
   )
 }

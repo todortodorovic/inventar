@@ -19,7 +19,8 @@ import {
   type DetailsDraft,
   type DetailsErrors,
 } from "./details-fields"
-import { ItemPicker, lineFor, type Line } from "./item-picker"
+import { hasStock, ItemPicker, lineFor, type Line } from "./item-picker"
+import { profitText } from "@/components/app/money"
 
 /**
  * New parcel: recipient, articles off the shelf, postage. Mount it with a
@@ -87,7 +88,25 @@ export function CreateShipmentDialog({
     setErrors(found)
     setPriceErrors(badPrices)
     setItemsError(noItems ? dict.validation.noItems : undefined)
-    if (!details || noItems || Object.keys(badPrices).length > 0) return
+
+    // Focus the first problem in reading order; in this long sheet it may be scrolled away.
+    const firstInvalid = (
+      [
+        ["name", found.name],
+        ["phone", found.phone],
+        ["items", noItems],
+        ...lines.map((l) => [`price-${l.articleId}`, badPrices[l.articleId]]),
+        ["shippingCost", found.shippingCost],
+      ] as [string, unknown][]
+    ).find(([, problem]) => problem)?.[0]
+    if (firstInvalid) {
+      const el = document.getElementById(`${idPrefix}-${firstInvalid}`)
+      // The item area is a group: its search box is where to start.
+      const target = firstInvalid === "items" ? el?.querySelector("input") : el
+      target?.focus()
+      return
+    }
+    if (!details) return
 
     const result = inventory.createShipment(
       details,
@@ -111,7 +130,7 @@ export function CreateShipmentDialog({
 
         <form
           noValidate
-          className="flex min-w-0 flex-col gap-7"
+          className="flex min-w-0 flex-col gap-6"
           onSubmit={(e) => {
             e.preventDefault()
             submit()
@@ -133,26 +152,26 @@ export function CreateShipmentDialog({
 
           <DeliveryFields idPrefix={idPrefix} draft={draft} errors={errors} onChange={change} dict={dict.form} />
 
-          <section aria-label={dict.form.summary} className="rounded-2xl bg-sand px-4 py-4 sm:px-5">
-            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-sm">
-              <dt className="text-ink-muted">{dict.form.pieces}</dt>
+          <section aria-label={dict.form.summary} className="rounded-lg border border-hairline bg-sunken px-4 py-3.5">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[13px]">
+              <dt className="text-fg-muted">{dict.form.pieces}</dt>
               <dd className="text-right tabular-nums">{formatNumber(pieces, locale)}</dd>
-              <dt className="text-ink-muted">{t.fields.cost}</dt>
+              <dt className="text-fg-muted">{t.fields.cost}</dt>
               <dd className="text-right tabular-nums">{formatMoney(cost, locale)}</dd>
-              <dt className="text-ink-muted">{dict.form.shipping}</dt>
+              <dt className="text-fg-muted">{dict.form.shipping}</dt>
               <dd className="text-right tabular-nums">{formatMoney(shipping, locale)}</dd>
-              <dt className="text-ink-muted">{t.fields.expectedProfit}</dt>
-              <dd className={cn("text-right font-semibold tabular-nums", profit < 0 ? "text-loss" : "text-gain")}>
+              <dt className="text-fg-muted">{t.fields.expectedProfit}</dt>
+              <dd className={cn("text-right font-semibold tabular-nums", profitText(profit))}>
                 {formatMoney(profit, locale)}
               </dd>
             </dl>
-            <div className="mt-3.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-t border-line-strong pt-3.5">
-              <span className="font-mono text-[11px] font-medium tracking-[0.14em] text-ink-muted uppercase">
+            <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-t border-hairline-strong pt-3">
+              <span className="type-overline">
                 {dict.form.cod}
               </span>
               <output
                 aria-live="polite"
-                className="font-display text-[32px] leading-none font-bold tracking-[-0.04em] tabular-nums"
+                className="text-[26px] leading-none font-semibold tracking-[-0.022em] tabular-nums"
               >
                 {formatMoney(cod, locale)}
               </output>
@@ -160,10 +179,10 @@ export function CreateShipmentDialog({
           </section>
 
           <DialogFooter>
-            <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" size="cta" onClick={() => onOpenChange(false)}>
               {t.actions.cancel}
             </Button>
-            <Button type="submit" variant="brand" size="cta">
+            <Button type="submit" variant="primary" size="cta" disabled={!hasStock(articles)}>
               {dict.form.submit}
             </Button>
           </DialogFooter>

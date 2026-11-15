@@ -16,6 +16,7 @@ import type { Article, Id } from "@/lib/inventory/types"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import { ArticlePicker } from "./article-picker"
+import { profitText } from "@/components/app/money"
 
 type Props = {
   open: boolean
@@ -144,7 +145,7 @@ function NewSaleForm({ articles, dict, onSold, onClose }: Omit<Props, "open" | "
               type="button"
               variant="outline"
               size="icon"
-              className="size-10 rounded-full"
+              className="size-10 shrink-0 md:size-9"
               aria-label={d.decrease}
               disabled={!article || (qty ?? 0) <= 1}
               onClick={() => step(-1)}
@@ -164,7 +165,7 @@ function NewSaleForm({ articles, dict, onSold, onClose }: Omit<Props, "open" | "
               type="button"
               variant="outline"
               size="icon"
-              className="size-10 rounded-full"
+              className="size-10 shrink-0 md:size-9"
               aria-label={d.increase}
               disabled={!article || (qty ?? 0) >= onHand}
               onClick={() => step(1)}
@@ -224,14 +225,14 @@ function NewSaleForm({ articles, dict, onSold, onClose }: Omit<Props, "open" | "
       </div>
 
       {preview && (
-        <section aria-label={d.preview} aria-live="polite" className="rounded-2xl bg-ink p-4 text-cream sm:p-5">
+        <section aria-label={d.preview} aria-live="polite" className="rounded-lg border border-hairline bg-sunken p-4">
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
-              <p className="font-mono text-[11px] tracking-[0.14em] text-night-faint uppercase">{t.fields.profit}</p>
+              <p className="type-label">{t.fields.profit}</p>
               <p
                 className={cn(
-                  "font-display text-[32px] leading-none font-bold tracking-[-0.04em] tabular-nums",
-                  preview.profit < 0 ? "text-status-returned" : "text-success",
+                  "mt-1 type-figure",
+                  profitText(preview.profit),
                 )}
               >
                 {formatSigned(preview.profit, locale)}
@@ -244,14 +245,14 @@ function NewSaleForm({ articles, dict, onSold, onClose }: Omit<Props, "open" | "
                 [t.fields.margin, preview.margin === null ? dict.stats.marginNone : formatPercent(preview.margin, locale)],
               ].map(([label, value]) => (
                 <div key={label} className="flex flex-col gap-1">
-                  <dt className="font-mono text-[10px] tracking-[0.12em] text-night-faint uppercase">{label}</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{value}</dd>
+                  <dt className="type-label">{label}</dt>
+                  <dd className="text-[13.5px] font-semibold tabular-nums">{value}</dd>
                 </div>
               ))}
             </dl>
           </div>
           {preview.profit < 0 && (
-            <p className="mt-3 flex items-center gap-2 text-[13px] text-highlight">
+            <p className="mt-3 flex items-center gap-2 border-t border-hairline pt-3 text-[13px] text-status-pending-ink">
               <TriangleAlertIcon className="size-4 shrink-0" aria-hidden />
               {d.belowCost}
             </p>
@@ -260,10 +261,10 @@ function NewSaleForm({ articles, dict, onSold, onClose }: Omit<Props, "open" | "
       )}
 
       <DialogFooter>
-        <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={onClose}>
+        <Button type="button" variant="ghost" size="cta" onClick={onClose}>
           {t.actions.cancel}
         </Button>
-        <Button type="submit" variant="brand" size="cta" disabled={inStock.length === 0}>
+        <Button type="submit" variant="primary" size="cta" disabled={inStock.length === 0}>
           {d.submit}
         </Button>
       </DialogFooter>

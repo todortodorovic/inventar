@@ -1,10 +1,13 @@
 "use client"
 
 import { PackageIcon, PlusIcon, XIcon } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 import { useApp } from "@/components/app/app-provider"
 import { SearchInput } from "@/components/app/search-input"
+import { buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { localePath } from "@/config/site"
 import type { Dictionary } from "@/content/types"
 import { fill, formatMoney, parseAmount, plural } from "@/lib/format"
 import { matches } from "@/lib/inventory/selectors"
@@ -21,7 +24,13 @@ export const lineFor = (article: Article): Line => ({
   price: String(article.salePrice),
 })
 
-/** Search the shelf, add articles, set how many and at what price. */
+/** Is anything on the shelf? Without it a new shipment cannot be filled in. */
+export const hasStock = (articles: Article[]) => articles.some((a) => a.quantity > 0)
+
+/**
+ * Search the shelf, add articles, set how many and at what price. The root
+ * carries `id={idPrefix}-items` so a failed submit can focus the search.
+ */
 export function ItemPicker({
   idPrefix,
   articles,
@@ -61,16 +70,22 @@ export function ItemPicker({
   const remove = (id: Id) => onChange(lines.filter((l) => l.articleId !== id))
 
   return (
-    <div className="flex flex-col gap-3">
+    <div id={`${idPrefix}-items`} className="flex flex-col gap-3">
       {inStock.length === 0 ? (
-        <p className="rounded-2xl bg-sand px-4 py-5 text-center text-sm text-ink-muted">{dict.noArticles}</p>
+        // One message and the way out; the "pick from the list above" hint would point at nothing.
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-hairline bg-sunken px-4 py-5 text-center">
+          <p className="text-[13px] text-fg-muted">{dict.noArticles}</p>
+          <Link href={localePath(locale, "inventory")} className={buttonVariants({ variant: "outline", size: "cta" })}>
+            {dict.toStock}
+          </Link>
+        </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-line">
-          <div className="border-b border-line bg-sand/60 p-2">
+        <div className="overflow-hidden rounded-lg border border-hairline-strong shadow-xs">
+          <div className="border-b border-hairline bg-surface-subtle p-2">
             <SearchInput value={query} onChange={setQuery} placeholder={dict.searchArticles} clearLabel={t.actions.clearSearch} />
           </div>
-          <ul className="max-h-[236px] overflow-y-auto overscroll-contain p-1.5">
-            {found.length === 0 && <li className="px-3 py-4 text-center text-sm text-ink-muted">{t.filters.noResults}</li>}
+          <ul className="max-h-[236px] overflow-y-auto overscroll-contain p-1">
+            {found.length === 0 && <li className="px-3 py-4 text-center text-sm text-fg-muted">{t.filters.noResults}</li>}
             {found.map((a) => {
               const picked = lineOf(a.id)?.quantity ?? 0
               const full = picked >= a.quantity
@@ -80,22 +95,22 @@ export function ItemPicker({
                     type="button"
                     onClick={() => add(a)}
                     disabled={full}
-                    className="flex min-h-12 w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors outline-none hover:bg-sand focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-55 disabled:hover:bg-transparent"
+                    className="flex min-h-12 w-full items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors outline-none hover:bg-sunken focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-55 disabled:hover:bg-transparent"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium break-words">{a.name}</span>
-                      <span className="flex flex-wrap gap-x-2 text-xs text-ink-muted">
-                        {a.sku && <span className="font-mono">{a.sku}</span>}
+                      <span className="block text-[13.5px] font-medium break-words">{a.name}</span>
+                      <span className="flex flex-wrap gap-x-2 text-[12px] text-fg-muted">
+                        {a.sku && <span className="font-code text-[11px] uppercase">{a.sku}</span>}
                         <span>{fill(dict.onHand, { pieces: plural(t.units.pieces, a.quantity, locale) })}</span>
                       </span>
                     </span>
-                    <span className="shrink-0 text-right text-sm tabular-nums">{formatMoney(a.salePrice, locale)}</span>
+                    <span className="shrink-0 text-right text-[13.5px] tabular-nums">{formatMoney(a.salePrice, locale)}</span>
                     {picked > 0 ? (
-                      <span className="shrink-0 rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] text-cream tabular-nums">
+                      <span className="shrink-0 rounded-[5px] bg-accent-soft px-1.5 py-0.5 text-[11.5px] font-semibold text-accent-ink tabular-nums ring-1 ring-accent-edge/45 ring-inset">
                         {fill(dict.added, { n: picked })}
                       </span>
                     ) : (
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink/6" aria-hidden>
+                      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-hairline-strong bg-surface text-fg-muted shadow-xs" aria-hidden>
                         <PlusIcon className="size-4" />
                       </span>
                     )}
@@ -108,16 +123,18 @@ export function ItemPicker({
       )}
 
       {lines.length === 0 ? (
-        <p
-          className={cn(
-            "flex items-center gap-2.5 rounded-2xl border border-dashed px-4 py-3.5 text-sm",
-            error ? "border-destructive/50 text-destructive" : "border-line-strong text-ink-muted",
-          )}
-          role={error ? "alert" : undefined}
-        >
-          <PackageIcon className="size-4 shrink-0" aria-hidden />
-          {error ?? dict.noLines}
-        </p>
+        inStock.length > 0 && (
+          <p
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg border border-dashed px-4 py-3.5 text-[13px]",
+              error ? "border-destructive/50 text-destructive" : "border-hairline-strong text-fg-muted",
+            )}
+            role={error ? "alert" : undefined}
+          >
+            <PackageIcon className="size-4 shrink-0" aria-hidden />
+            {error ?? dict.noLines}
+          </p>
+        )
       ) : (
         <ul className="flex flex-col gap-2">
           {lines.map((line) => {
@@ -127,14 +144,14 @@ export function ItemPicker({
             const priceError = priceErrors[line.articleId]
             const unit = parseAmount(line.price) ?? 0
             return (
-              <li key={line.articleId} className="rounded-2xl bg-sand/70 p-3">
+              <li key={line.articleId} className="rounded-lg border border-hairline bg-sunken p-3">
                 <div className="flex items-start gap-2">
-                  <p className="min-w-0 flex-1 pt-2 pl-1 text-sm font-semibold break-words">{name}</p>
+                  <p className="min-w-0 flex-1 pt-2 pl-0.5 text-[13.5px] font-medium break-words">{name}</p>
                   <button
                     type="button"
                     onClick={() => remove(line.articleId)}
                     aria-label={fill(dict.removeLine, { name })}
-                    className="grid size-10 shrink-0 place-items-center rounded-full text-ink-muted transition-colors outline-none hover:bg-white hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="grid size-10 shrink-0 place-items-center rounded-md text-fg-muted transition-colors outline-none hover:bg-surface hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring md:size-8"
                   >
                     <XIcon className="size-4" aria-hidden />
                   </button>
@@ -148,7 +165,7 @@ export function ItemPicker({
                     decreaseLabel={dict.decrease}
                     increaseLabel={dict.increase}
                   />
-                  <span className="text-ink-faint" aria-hidden>
+                  <span className="text-fg-faint" aria-hidden>
                     ×
                   </span>
                   <Input
@@ -162,7 +179,7 @@ export function ItemPicker({
                     aria-describedby={priceError ? `${priceId}-error` : undefined}
                     className="w-28 text-right tabular-nums"
                   />
-                  <span className="ml-auto text-sm font-semibold tabular-nums">
+                  <span className="ml-auto text-[14px] font-semibold tabular-nums">
                     {formatMoney(unit * line.quantity, locale)}
                   </span>
                 </div>

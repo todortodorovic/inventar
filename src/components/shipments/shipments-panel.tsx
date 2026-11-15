@@ -1,6 +1,7 @@
 "use client"
 
 import { PackageOpenIcon, PlusIcon, SearchXIcon } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { useApp } from "@/components/app/app-provider"
@@ -10,7 +11,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { Panel } from "@/components/app/panel"
 import { SearchInput } from "@/components/app/search-input"
 import { PanelSkeleton } from "@/components/app/skeleton"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { localePath } from "@/config/site"
 import type { Dictionary } from "@/content/types"
 import { fill, formatMoney } from "@/lib/format"
@@ -22,6 +23,7 @@ import { toast } from "@/lib/toast"
 import { commandTarget, courierText, needsConfirm, type ShipmentCommand } from "./commands"
 import { CreateShipmentDialog } from "./create-shipment-dialog"
 import { EditShipmentDialog } from "./edit-shipment-dialog"
+import { hasStock } from "./item-picker"
 import { ShipmentCard } from "./shipment-card"
 import { ShipmentConfirm } from "./shipment-confirm"
 import { ShipmentStats } from "./shipment-stats"
@@ -38,6 +40,39 @@ const inFilter = (filter: Filter, status: ShipmentStatus) =>
  */
 type DialogState<T> = { open: boolean; session: number } & T
 
+const cardOf = (root: HTMLElement | null, id: Id | undefined) =>
+  id === undefined ? null : (root?.querySelector<HTMLElement>(`[data-shipment-id="${CSS.escape(id)}"]`) ?? null)
+
+/**
+ * A status move can unmount the control that had focus: the card's buttons
+ * change, or the card leaves the current filter (or the list). Once any
+ * confirm dialog has closed and handed focus back where it could, make sure
+ * focus is somewhere sensible: still inside the card, else on its heading;
+ * if the card is gone, on the next (or previous) card's heading; if the list
+ * is empty, on what replaced it.
+ */
+function keepFocus(root: HTMLElement | null, id: Id) {
+  const cards = [...(root?.querySelectorAll<HTMLElement>("[data-shipment-id]") ?? [])]
+  const at = cards.findIndex((el) => el.dataset.shipmentId === id)
+  const neighbours = [cards[at + 1], cards[at - 1]].map((el) => el?.dataset.shipmentId)
+  const deadline = performance.now() + 1500
+  const settle = () => {
+    if (document.querySelector('[data-slot="dialog-content"]')) {
+      if (performance.now() < deadline) requestAnimationFrame(settle)
+      return
+    }
+    const card = cardOf(root, id)
+    if (card) {
+      if (!card.contains(document.activeElement)) card.querySelector<HTMLElement>("[data-card-focus]")?.focus({ preventScroll: true })
+      return
+    }
+    const next = neighbours.map((n) => cardOf(root, n)).find(Boolean)
+    const target = next?.querySelector<HTMLElement>("[data-card-focus]") ?? root?.querySelector<HTMLElement>("button, a") ?? root
+    target?.focus()
+  }
+  requestAnimationFrame(settle)
+}
+
 export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
   const { locale, t } = useApp()
   const state = useInventory()
@@ -50,6 +85,8 @@ export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
   const [confirm, setConfirm] = useState<{ open: boolean; command?: ShipmentCommand; shipment?: Shipment }>({
     open: false,
   })
+  /** The list (or the empty state in its place): where focus goes when a card leaves. */
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   const openCreate = (articleId?: Id) => setCreate((c) => ({ open: true, session: c.session + 1, articleId }))
 
@@ -97,6 +134,7 @@ export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
     const to = commandTarget[command]
     const done = command === "delete" ? report(inventory.deleteShipment(sh.id)) : to ? setStatus(sh.id, to) : false
     if (!done) return
+    keepFocus(resultsRef.current, sh.id)
     const code = sh.code
     const undo = (back: ShipmentStatus) => ({ label: t.actions.undo, onClick: () => setStatus(sh.id, back) })
     switch (command) {
@@ -140,7 +178,7 @@ export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
       title={dict.title}
       subtitle={dict.subtitle}
       actions={
-        <Button variant="brand" size="cta" onClick={() => openCreate()}>
+        <Button variant="primary" size="cta" onClick={() => openCreate()}>
           <PlusIcon data-icon="inline-start" aria-hidden />
           {dict.newShipment}
         </Button>
@@ -192,7 +230,7 @@ export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
     <>
       {header}
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <ShipmentStats state={state} now={now} dict={dict.stats} />
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -206,40 +244,49 @@ export function ShipmentsPanel({ dict }: { dict: Dictionary["shipments"] }) {
           />
         </div>
 
-        {state.shipments.length === 0 ? (
-          <Panel>
-            <EmptyState
-              icon={PackageOpenIcon}
-              title={dict.empty.title}
-              description={dict.empty.text}
-              action={
-                <Button variant="brand" size="cta" onClick={() => openCreate()}>
-                  <PlusIcon data-icon="inline-start" aria-hidden />
-                  {dict.newShipment}
-                </Button>
-              }
-            />
-          </Panel>
-        ) : visible.length === 0 ? (
-          <Panel>
-            <EmptyState
-              icon={filter === "active" && !query ? PackageOpenIcon : SearchXIcon}
-              title={filter === "active" && !query ? dict.empty.activeTitle : dict.empty.filteredTitle}
-              description={filter === "active" && !query ? dict.empty.activeText : dict.empty.filteredText}
-              action={
-                <Button variant="outline" size="cta" className="rounded-full" onClick={showAll}>
-                  {dict.empty.showAll}
-                </Button>
-              }
-            />
-          </Panel>
-        ) : (
-          <section aria-label={dict.filters.list} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visible.map((sh) => (
-              <ShipmentCard key={sh.id} shipment={sh} now={now} dict={dict} onCommand={onCommand} />
-            ))}
-          </section>
-        )}
+        <div ref={resultsRef} tabIndex={-1} className="outline-none">
+          {state.shipments.length === 0 ? (
+            <Panel>
+              {/* With nothing on the shelf a new shipment cannot be filled in: point to Stanje instead. */}
+              <EmptyState
+                icon={PackageOpenIcon}
+                title={dict.empty.title}
+                description={hasStock(state.articles) ? dict.empty.text : dict.empty.noStockText}
+                action={
+                  hasStock(state.articles) ? (
+                    <Button variant="dark" size="cta" onClick={() => openCreate()}>
+                      <PlusIcon data-icon="inline-start" aria-hidden />
+                      {dict.newShipment}
+                    </Button>
+                  ) : (
+                    <Link href={localePath(locale, "inventory")} className={buttonVariants({ variant: "dark", size: "cta" })}>
+                      {dict.form.toStock}
+                    </Link>
+                  )
+                }
+              />
+            </Panel>
+          ) : visible.length === 0 ? (
+            <Panel>
+              <EmptyState
+                icon={filter === "active" && !query ? PackageOpenIcon : SearchXIcon}
+                title={filter === "active" && !query ? dict.empty.activeTitle : dict.empty.filteredTitle}
+                description={filter === "active" && !query ? dict.empty.activeText : dict.empty.filteredText}
+                action={
+                  <Button variant="outline" size="cta" onClick={showAll}>
+                    {dict.empty.showAll}
+                  </Button>
+                }
+              />
+            </Panel>
+          ) : (
+            <section aria-label={dict.filters.list} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {visible.map((sh) => (
+                <ShipmentCard key={sh.id} shipment={sh} now={now} dict={dict} onCommand={onCommand} />
+              ))}
+            </section>
+          )}
+        </div>
       </div>
 
       <CreateShipmentDialog

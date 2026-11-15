@@ -15,8 +15,9 @@ import { ALL, isFiltered, NO_CATEGORY, sortKeys, type Filters, type SortKey } fr
 const levels = [ALL, "ok", "low", "out"] as const
 
 /**
- * Search, category, stock level and sort. Desktop gets chips with counts;
- * phones get native selects, which open the system picker and never overflow.
+ * Search, category, stock level and sort. Stock level is a segmented control
+ * everywhere; categories are chips on desktop and a full-width native select
+ * on phones (the system picker never overflows).
  */
 export function InventoryToolbar({
   filters,
@@ -60,38 +61,27 @@ export function InventoryToolbar({
           clearLabel={t.actions.clearSearch}
           className="lg:w-[340px] lg:shrink-0"
         />
+        {/* Phones: the category as a full-width select, so "Sve kategorije (18)" never truncates. */}
+        <NativeSelect
+          aria-label={dict.toolbar.category}
+          value={filters.category}
+          onChange={(e) => set("category", e.target.value)}
+          className="lg:hidden"
+        >
+          {categoryOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label} ({o.count})
+            </option>
+          ))}
+        </NativeSelect>
+        {/* Stock level: four short options, so a segmented control everywhere (it scrolls if it must). */}
         <ChipGroup
           label={dict.toolbar.level}
           value={filters.level}
           onChange={(v) => set("level", v)}
           options={levelOptions}
-          className="hidden self-start lg:flex"
+          className="self-stretch lg:self-start"
         />
-        {/* Phones: category and stock level as two selects side by side. */}
-        <div className="grid grid-cols-2 gap-2 lg:hidden">
-          <NativeSelect
-            aria-label={dict.toolbar.category}
-            value={filters.category}
-            onChange={(e) => set("category", e.target.value)}
-          >
-            {categoryOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label} ({o.count})
-              </option>
-            ))}
-          </NativeSelect>
-          <NativeSelect
-            aria-label={dict.toolbar.level}
-            value={filters.level}
-            onChange={(e) => set("level", e.target.value as Filters["level"])}
-          >
-            {levelOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label} ({o.count})
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
       </div>
 
       <ChipGroup
@@ -104,14 +94,14 @@ export function InventoryToolbar({
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex min-h-10 items-center gap-2">
-          <p className="text-sm text-ink-muted" aria-live="polite">
+          <p className="text-[13px] text-fg-muted tabular-nums" aria-live="polite">
             {fill(dict.toolbar.shown, { articles: plural(t.units.articles, shown, locale) })}
           </p>
           {isFiltered(filters) && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 rounded-full px-3 text-[13px] font-semibold"
+              className="h-8 px-2.5 text-[13px] text-fg-soft hover:bg-sunken hover:text-fg"
               onClick={() => onChange({ ...filters, query: "", category: ALL, level: ALL })}
             >
               <FilterXIcon aria-hidden />
@@ -119,15 +109,16 @@ export function InventoryToolbar({
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor={`${id}-sort`} className="text-[13px] font-semibold text-ink-soft">
+        {/* Phones: sort shares the line with "Prikazano" (its label is read, not shown), so the first card moves up. */}
+        <div className="ml-auto flex min-w-0 items-center gap-2">
+          <label htmlFor={`${id}-sort`} className="shrink-0 text-[13px] text-fg-muted max-sm:sr-only">
             {dict.toolbar.sort}
           </label>
           <NativeSelect
             id={`${id}-sort`}
             value={filters.sort}
             onChange={(e) => set("sort", e.target.value as SortKey)}
-            className="w-[210px]"
+            className="w-[210px] max-sm:w-[176px]"
           >
             {sortKeys.map((k) => (
               <option key={k} value={k}>

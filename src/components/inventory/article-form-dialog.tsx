@@ -101,7 +101,7 @@ function ArticleForm({
         action: {
           label: t.actions.undo,
           onClick: () => {
-            const undo = inventory.deleteArticle(result.id)
+            const undo = inventory.undoCreateArticle(result.id)
             if (!undo.ok) toast(t.errors[undo.error], { tone: "error" })
           },
         },
@@ -153,7 +153,7 @@ function ArticleForm({
             value={sku}
             onChange={(e) => setSku(e.target.value.toUpperCase())}
             placeholder={dict.form.skuPlaceholder}
-            className="font-mono"
+            className="font-code"
             autoComplete="off"
             autoCapitalize="characters"
           />
@@ -207,7 +207,14 @@ function ArticleForm({
         </Field>
       </div>
 
-      <Preview title={dict.form.preview}>
+      <Preview
+        title={dict.form.preview}
+        announce={
+          unit === null
+            ? ""
+            : `${fill(dict.form.expectedFor, { pieces: plural(t.units.pieces, pieces, locale) })}: ${formatMoney(unit * pieces, locale)}`
+        }
+      >
         <PreviewRow
           label={dict.form.unitProfit}
           value={unit === null ? "—" : formatSigned(unit, locale)}
@@ -228,10 +235,10 @@ function ArticleForm({
       {unit !== null && unit < 0 && <Warning>{dict.form.belowCost}</Warning>}
 
       <DialogFooter>
-        <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={onClose}>
+        <Button type="button" variant="ghost" size="cta" onClick={onClose}>
           {t.actions.cancel}
         </Button>
-        <Button type="submit" variant="brand" size="cta">
+        <Button type="submit" variant="primary" size="cta">
           {article ? t.actions.save : dict.form.submitCreate}
         </Button>
       </DialogFooter>

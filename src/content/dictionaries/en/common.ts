@@ -12,6 +12,12 @@ export const common: Dictionary["common"] = {
     shipments: "Shipments",
     sales: "Sold",
     languageLabel: "Language",
+    skipToContent: "Skip to content",
+  },
+  /** Each language named in itself (the SR / EN switch reads these out). */
+  languages: {
+    sr: "Srpski",
+    en: "English",
   },
   demo: {
     badge: "Demo",
@@ -19,7 +25,7 @@ export const common: Dictionary["common"] = {
     reset: "Restore demo data",
     clear: "Start from scratch",
     confirmReset: "Every change in this session will be replaced with the demo data.",
-    confirmClear: "All articles, sales and shipments will be deleted.",
+    confirmClear: "All items, sales and shipments will be deleted.",
   },
   actions: {
     save: "Save",
@@ -38,7 +44,7 @@ export const common: Dictionary["common"] = {
   fields: {
     name: "Name",
     category: "Category",
-    sku: "SKU",
+    sku: "Code",
     note: "Note",
     quantity: "Quantity",
     purchasePrice: "Purchase price",
@@ -85,7 +91,7 @@ export const common: Dictionary["common"] = {
   },
   units: {
     pieces: { one: "{n} piece", other: "{n} pieces" },
-    articles: { one: "{n} article", other: "{n} articles" },
+    articles: { one: "{n} item", other: "{n} items" },
     shipments: { one: "{n} shipment", other: "{n} shipments" },
     sales: { one: "{n} sale", other: "{n} sales" },
   },
@@ -94,13 +100,26 @@ export const common: Dictionary["common"] = {
     "invalid-input": "Check the form: some fields are not valid.",
     "insufficient-stock": "Not enough pieces in stock.",
     "invalid-transition": "This status change is not possible.",
-    "article-in-shipment": "This article is in a shipment that is not finished yet.",
+    "article-in-shipment": "This item is in a shipment that is not finished yet.",
+    "article-changed": "This item has been used since, so adding it can't be undone.",
   },
   validation: {
     required: "Required.",
     wholeNumber: "Enter a whole number.",
     min: "At least {min}.",
     max: "At most {max}.",
+  },
+  /** The toast stack (`Toaster`). */
+  toasts: {
+    label: "Notifications",
+    /** Read after a toast that has an action (Undo). */
+    actionHint: "Press Alt+T to reach the button.",
+  },
+  /** The 404 page. */
+  notFound: {
+    title: "Page not found",
+    description: "The address is wrong or the page was removed. Your data is still here.",
+    back: "Back to overview",
   },
   loading: "Loading…",
 }

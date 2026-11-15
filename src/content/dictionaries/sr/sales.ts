@@ -2,7 +2,6 @@
 export const sales = {
   title: "Prodato",
   subtitle: "Svaka prodaja, direktna ili iz pošiljke, sa zaradom.",
-  eyebrow: "Prodaja i zarada",
   newSale: "Nova prodaja",
   exportCsv: "Izvezi CSV",
   exported: "CSV je preuzet: {count}.",
@@ -13,12 +12,22 @@ export const sales = {
     periods: {
       month: "Ovaj mesec",
       lastMonth: "Prošli mesec",
-      quarter: "Poslednja 3 meseca",
+      "30d": "Poslednjih 30 dana",
+      "3m": "Poslednja 3 meseca",
       year: "Ova godina",
       all: "Sve",
     },
+    /**
+     * The rolling periods, short enough for the segmented control on a 390px
+     * phone (there the calendar ones show the month or year: „Nov“, „2026“).
+     */
+    periodsShort: {
+      "30d": "30 dana",
+      "3m": "3 mes.",
+      all: "Sve",
+    },
     channel: "Kanal prodaje",
-    search: "Pretraži artikal, kupca, napomenu ili pošiljku",
+    search: "Artikal, kupac, napomena, pošiljka…",
     clear: "Poništi filtere",
   },
 
@@ -27,7 +36,8 @@ export const sales = {
     revenueHint: "Ukupno naplaćeno od kupaca",
     costHint: "Koliko je prodata roba koštala",
     profitHint: "Prihod minus nabavna vrednost",
-    marginHint: "Od svakih 100 dinara prihoda",
+    postageHint: "Posle nabavne vrednosti i {amount} poštarine",
+    marginHint: "Deo prihoda koji ostaje kao profit",
     marginNone: "—",
     sold: "Prodato",
     split: "Udeo u prihodu po kanalu",
@@ -53,7 +63,7 @@ export const sales = {
     undo: "Poništi",
     undoLabel: "Poništi prodaju: {name}",
     shipmentLink: "Pošiljka {code}: poništava se u Pošiljkama",
-    shipmentHint: "Prodaje iz pošiljki poništavaju se u Pošiljkama, dugmetom „Poništi leglo”.",
+    shipmentHint: "Prodaje iz pošiljki poništavaju se u Pošiljkama, dugmetom „Poništi leglo“.",
     deletedShipment: "obrisana",
     shown: "Prikazano {shown} od {total}",
     showMore: "Prikaži još",
@@ -61,9 +71,9 @@ export const sales = {
 
   undo: {
     title: "Poništiti ovu prodaju?",
-    description: "Prodaja „{name}” biće obrisana iz pregleda i zarade, a {pieces} vraćamo na stanje.",
+    description: "Prodaja artikla „{name}“ biće obrisana iz pregleda i zarade, a na stanje se vraća {pieces}.",
     deletedArticle:
-      "Prodaja „{name}” biće obrisana iz pregleda i zarade. Artikal je u međuvremenu obrisan, pa komade nije moguće vratiti na stanje.",
+      "Prodaja artikla „{name}“ biće obrisana iz pregleda i zarade. Artikal je u međuvremenu obrisan, pa komade nije moguće vratiti na stanje.",
     confirm: "Poništi prodaju",
     done: "Prodaja je poništena.",
   },
@@ -93,7 +103,7 @@ export const sales = {
 
   empty: {
     title: "Još nema prodaja",
-    description: "Zabeleži prvu prodaju sa stanja ili označi pošiljku kao „Leglo” i ovde će se pojaviti sa zaradom.",
+    description: "Zabeleži prvu prodaju sa stanja ili označi pošiljku kao „Leglo“ i ovde će se pojaviti sa zaradom.",
     filteredTitle: "Ništa za ovaj prikaz",
     filteredDescription: "U izabranom periodu nema prodaja koje odgovaraju filterima.",
     showAll: "Prikaži sve periode",
@@ -111,7 +121,7 @@ export const sales = {
     unitPurchase: "Nabavna cena po komadu",
     unitSale: "Prodajna cena po komadu",
     revenue: "Prihod",
-    profit: "Profit",
+    profit: "Profit pre poštarine",
     note: "Napomena",
   },
 }

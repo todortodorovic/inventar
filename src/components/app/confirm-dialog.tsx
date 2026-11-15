@@ -32,13 +32,12 @@ export function ConfirmDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" size="cta" className="rounded-full" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="cta" onClick={() => onOpenChange(false)}>
             {t.actions.cancel}
           </Button>
           <Button
-            variant={destructive ? "destructive" : "brand"}
+            variant={destructive ? "destructive" : "primary"}
             size="cta"
-            className="rounded-full"
             onClick={() => {
               onConfirm()
               onOpenChange(false)

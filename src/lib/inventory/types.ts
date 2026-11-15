@@ -133,3 +133,5 @@ export type InventoryErrorCode =
   | "insufficient-stock"
   | "invalid-transition"
   | "article-in-shipment"
+  /** Undo of "article created" after the article was already used. */
+  | "article-changed"

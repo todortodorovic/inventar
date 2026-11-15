@@ -6,8 +6,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import type { Dictionary } from "@/content/types"
 import { fill, formatDateTime, formatMoney, formatNumber, formatSigned, plural } from "@/lib/format"
 import { saleProfit } from "@/lib/inventory/selectors"
-import type { Article, InventoryState } from "@/lib/inventory/types"
+import type { Article, InventoryState, Movement } from "@/lib/inventory/types"
 import { cn } from "@/lib/utils"
+import { profitText } from "@/components/app/money"
 
 type Props = {
   open: boolean
@@ -51,25 +52,25 @@ function History({ article, state, dict }: { article: Article; state: InventoryS
       label: dict.history.salesProfit,
       value: formatMoney(earned, locale),
       // Money needs the full width on phones.
-      className: cn("col-span-2 sm:col-span-1", earned > 0 ? "text-gain" : earned < 0 && "text-loss"),
+      className: cn("col-span-2 sm:col-span-1", profitText(earned, "")),
     },
   ]
 
   return (
     <>
       <DialogHeader>
-        <p className="font-mono text-[11px] font-medium tracking-[0.16em] text-ink-faint uppercase">{dict.history.title}</p>
+        <p className="type-overline">{dict.history.title}</p>
         <DialogTitle>{article.name}</DialogTitle>
         <DialogDescription>{dict.history.description}</DialogDescription>
       </DialogHeader>
 
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className={cn("min-w-0 rounded-2xl bg-sand px-3 py-3 sm:px-4", s.className)}>
-            <dt className="truncate font-mono text-[10px] font-medium tracking-[0.12em] text-ink-muted uppercase sm:text-[11px]">
+          <div key={s.label} className={cn("min-w-0 rounded-lg border border-hairline bg-surface-subtle px-3 py-2.5 sm:px-3.5", s.className)}>
+            <dt className="truncate type-label">
               {s.label}
             </dt>
-            <dd className="mt-1 truncate font-display text-lg font-bold tracking-[-0.03em] tabular-nums sm:text-xl">
+            <dd className="mt-1 truncate text-[17px] font-semibold tracking-[-0.01em] tabular-nums sm:text-[19px]">
               {s.value}
             </dd>
           </div>
@@ -77,44 +78,50 @@ function History({ article, state, dict }: { article: Article; state: InventoryS
       </dl>
 
       {movements.length === 0 ? (
-        <p className="flex items-center justify-center gap-2 py-8 text-sm text-ink-muted">
+        <p className="flex items-center justify-center gap-2 py-8 text-sm text-fg-muted">
           <HistoryIcon className="size-4" aria-hidden />
           {dict.history.empty}
         </p>
       ) : (
         <div>
-          <p className="mb-2 font-mono text-[11px] font-medium tracking-[0.14em] text-ink-muted uppercase">
+          <p className="mb-2 type-overline">
             {plural(dict.history.movements, movements.length, locale)}
           </p>
-          <ol className="flex flex-col divide-y divide-line rounded-2xl border border-line">
+          <ol className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
             {movements.map((m) => {
-              const incoming = m.quantity > 0
-              const Icon = incoming ? ArrowDownLeftIcon : ArrowUpRightIcon
-              const ref = m.refId && (codes.has(m.refId) ? fill(dict.history.shipment, { code: codes.get(m.refId)! }) : buyers.get(m.refId))
-              const detail = [ref, m.note].filter(Boolean).join(" · ")
+              const tone = movementTone(m)
+              const Icon = m.quantity > 0 ? ArrowDownLeftIcon : ArrowUpRightIcon
+              const code = m.refId ? codes.get(m.refId) : undefined
+              const buyer = m.refId && !code ? buyers.get(m.refId) : undefined
+              const detail = [buyer, m.note].filter(Boolean).join(" · ")
               return (
-                <li key={m.id} className="flex items-center gap-3 px-3.5 py-3 sm:px-4">
-                  <span
-                    className={cn(
-                      "grid size-8 shrink-0 place-items-center rounded-full",
-                      incoming ? "bg-status-delivered-soft text-gain" : "bg-status-returned-soft text-loss",
-                    )}
-                    aria-hidden
-                  >
+                <li key={m.id} className="flex items-center gap-3 px-3 py-2.5 sm:px-3.5">
+                  <span className={cn("grid size-7 shrink-0 place-items-center rounded-md", tone.icon)} aria-hidden>
                     <Icon className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold">{t.movement[m.type]}</p>
-                    <p className="truncate text-[13px] text-ink-muted">
-                      <time dateTime={m.date}>{formatDateTime(m.date, locale)}</time>
+                    <p className="truncate text-[13.5px] font-medium">{t.movement[m.type]}</p>
+                    {/* Phones wrap the line (between its parts) so the shipment code is never cut off. */}
+                    <p className="text-[12.5px] text-fg-muted tabular-nums sm:truncate">
+                      <time dateTime={m.date} className="whitespace-nowrap">
+                        {formatDateTime(m.date, locale)}
+                      </time>
+                      {code && (
+                        <>
+                          {" · "}
+                          <span className="whitespace-nowrap">
+                            <ShipmentRef template={dict.history.shipment} code={code} />
+                          </span>
+                        </>
+                      )}
                       {detail && ` · ${detail}`}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className={cn("font-display text-lg leading-tight font-bold tabular-nums", incoming ? "text-gain" : "text-loss")}>
+                    <p className={cn("text-[15px] leading-tight font-semibold tabular-nums", tone.text)}>
                       {formatSigned(m.quantity, locale)}
                     </p>
-                    <p className="text-[12px] text-ink-muted tabular-nums">
+                    <p className="text-[12px] text-fg-muted tabular-nums">
                       {fill(dict.history.unitPrice, { price: formatMoney(m.unitPrice, locale) })}
                     </p>
                   </div>
@@ -124,6 +131,30 @@ function History({ article, state, dict }: { article: Article; state: InventoryS
           </ol>
         </div>
       )}
+    </>
+  )
+}
+
+/**
+ * Colour of a movement: stock coming in is green, packing into a shipment is
+ * the "sent" sky, a sale is plain ink (it is good news, never a loss), and
+ * red is kept for a correction that takes pieces off the shelf.
+ */
+function movementTone(m: Movement): { icon: string; text: string } {
+  if (m.quantity > 0) return { icon: "bg-gain-soft text-gain", text: "text-gain" }
+  if (m.type === "shipment") return { icon: "bg-status-sent-soft text-status-sent-ink", text: "text-status-sent-ink" }
+  if (m.type === "adjust") return { icon: "bg-loss-soft text-loss", text: "text-loss" }
+  return { icon: "bg-sunken text-fg-soft", text: "text-fg" }
+}
+
+/** "Pošiljka {code}" with the code set in the monospace, a pixel smaller than the Inter around it. */
+function ShipmentRef({ template, code }: { template: string; code: string }) {
+  const [before, after = ""] = template.split("{code}")
+  return (
+    <>
+      {before}
+      <span className="font-code text-[11.5px] text-fg-soft">{code}</span>
+      {after}
     </>
   )
 }

@@ -6,9 +6,12 @@ import { LanguageSwitch } from "@/components/layout/language-switch"
 import { SectionNav } from "@/components/layout/section-nav"
 import { localePath, type Locale } from "@/config/site"
 import type { Dictionary } from "@/content/types"
-import { cn } from "@/lib/utils"
 
-/** Catena's header: transparent at the top, a frosted pill once the page scrolls. */
+/**
+ * The app chrome. Desktop: a graphite sidebar with the logo, the sections
+ * (with live counts) and the demo/language controls at the bottom.
+ * Phones: a light frosted top bar (the sections move to the bottom tab bar).
+ */
 export function AppHeader({ dict, locale }: { dict: Dictionary["common"]; locale: Locale }) {
   const labels = {
     overview: dict.nav.overview,
@@ -17,27 +20,40 @@ export function AppHeader({ dict, locale }: { dict: Dictionary["common"]; locale
     sales: dict.nav.sales,
   }
   return (
-    <HeaderFrame>
-      <div
-        className={cn(
-          "grid w-full max-w-[1320px] grid-cols-[1fr_auto] items-center gap-4 rounded-full border border-transparent py-2 transition-all duration-400 ease-soft min-[900px]:grid-cols-[1fr_auto_1fr]",
-          "group-data-scrolled/header:max-w-[1180px] group-data-scrolled/header:border-line group-data-scrolled/header:bg-cream/88 group-data-scrolled/header:pr-2 group-data-scrolled/header:pl-[18px]",
-          "group-data-scrolled/header:shadow-[0_10px_30px_-14px_rgb(22_22_26/0.3)] group-data-scrolled/header:backdrop-blur-[14px] group-data-scrolled/header:backdrop-saturate-140",
-        )}
-      >
-        <Link href={localePath(locale)} className="justify-self-start text-ink">
-          <Logo />
+    <>
+      <HeaderFrame>
+        <Link
+          href={localePath(locale)}
+          className="-ml-1 rounded-md p-1 outline-none focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <Logo size="sm" />
         </Link>
-
-        <div className="hidden min-[900px]:block">
-          <SectionNav locale={locale} labels={labels} navLabel={dict.nav.label} />
-        </div>
-
-        <div className="flex items-center gap-2 justify-self-end">
+        <div className="flex items-center gap-2">
           <DemoMenu />
           <LanguageSwitch locale={locale} label={dict.nav.languageLabel} />
         </div>
+      </HeaderFrame>
+
+      {/* The graphite column runs the full page height; its content stays put while the page scrolls. */}
+      <div className="hidden bg-sidebar text-sidebar-fg lg:block">
+        <div className="sticky top-0 flex h-svh flex-col">
+          <div className="flex h-[68px] shrink-0 items-center px-5">
+            <Link
+              href={localePath(locale)}
+              className="-ml-1 rounded-md p-1 outline-none focus-visible:outline-2 focus-visible:outline-accent-on-dark"
+            >
+              <Logo tone="dark" />
+            </Link>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 pt-2">
+            <SectionNav locale={locale} labels={labels} navLabel={dict.nav.label} />
+          </div>
+          <div className="m-3 flex items-center gap-2 rounded-[10px] bg-sidebar-raised p-1.5 ring-1 ring-sidebar-line">
+            <DemoMenu layout="row" />
+            <LanguageSwitch locale={locale} label={dict.nav.languageLabel} tone="dark" />
+          </div>
+        </div>
       </div>
-    </HeaderFrame>
+    </>
   )
 }

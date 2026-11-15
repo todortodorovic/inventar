@@ -5,161 +5,204 @@
 /* The app is light-only; `dark:` utilities in shadcn components only
    apply under an explicit `.dark` ancestor, never from the OS setting. */
 @custom-variant dark (&:is(.dark *));
-/* Desktop with enough height for full-screen layouts. */
-@custom-variant tall (@media (min-width: 900px) and (min-height: 720px));
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Design tokens — change the look of the whole site from here.
-   Raw palette first, then the semantic shadcn tokens mapped onto it.
+   Design tokens — "graphite + lime". Change the look of the whole
+   app from here. Semantic names first (what a colour is for), then shadcn's
+   tokens mapped onto them. Every text colour below passes 4.5:1 on the
+   surfaces it is meant for; lime is a FILL, never text on white.
    ────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Surfaces and ink */
-  --cream: #faf8f4;
-  --sand: #f3f1ec;
-  --stone: #f0ede6;
-  --ink: #16161a;
-  --ink-soft: #3a3a42;
-  --ink-muted: #55555d;
-  --ink-subtle: #5e5c6a;
-  --ink-faint: #9a97a3;
-  --night: #0c0b12;
-  --night-raised: #14131b;
-  --night-muted: #c9c7d3;
-  --night-faint: #9a98a6;
-  --line: rgb(22 22 26 / 0.08);
-  --line-strong: rgb(22 22 26 / 0.12);
+  /* Surfaces: page → card → wells inside cards */
+  --canvas: #f4f5f7;
+  --surface: #ffffff;
+  --surface-subtle: #fafbfc; /* table heads/footers, sticky bars, dialog footers */
+  --surface-hover: #f7f8fa;
+  --sunken: #f2f3f6; /* wells inside a card: previews, item lists, segmented tracks */
+  --sunken-strong: #e7eaef;
 
-  /* Accents */
-  --highlight: oklch(0.88 0.15 95);
-  --highlight-deep: oklch(0.82 0.15 70);
-  --pop: #ff4f9a; /* the pink "lip" under primary buttons */
-  --success: oklch(0.78 0.16 150);
-  --check: oklch(0.82 0.13 150);
-  --link-hover: oklch(0.5 0.17 290);
+  /* Text (cool, graphite-tinted) */
+  --fg: #11151c;
+  --fg-soft: #353b48;
+  --fg-muted: #555c6b;
+  --fg-faint: #60687a; /* ≥ 4.5:1 on white (5.6), --sunken (5.0), the chip track (4.8) and --sunken-strong (4.6) */
+  --fg-inverse: #ffffff;
+
+  /* Lines */
+  --hairline: #e5e7eb;
+  --hairline-strong: #d6dae1;
+
+  /* Graphite: near-black blue-graphite, the shell and in-card primary actions. */
+  --graphite-950: #0b0e14;
+  --graphite-900: #12161e; /* sidebar, "dark" buttons, toasts */
+  --graphite-850: #191e27; /* raised step on graphite: hover */
+  --graphite-800: #212630; /* active nav item, "dark" button hover */
+  --graphite-700: #2e333d; /* strongest step: pressed, dividers that must show */
+
+  /* The desktop sidebar (graphite) */
+  --sidebar: var(--graphite-900);
+  --sidebar-raised: var(--graphite-850);
+  --sidebar-active: var(--graphite-800);
+  --sidebar-line: rgb(255 255 255 / 0.07);
+  --sidebar-fg: #eef0f4; /* 16:1 */
+  --sidebar-fg-muted: #a9aeb8; /* 8:1 – inactive labels */
+  --sidebar-fg-faint: #8a909b; /* 5.5:1 – icons, counts */
+
+  /* LIME, the brand signal. Only for: the logo mark, the active nav state,
+     page-level primary buttons, the selected-period band in charts and
+     selection highlights. Never text on white, never profit. */
+  --accent: #c6f432; /* fill */
+  --accent-hover: #b8e627;
+  --accent-press: #a9d61d;
+  --accent-fg: #11151c; /* text/icons on a lime fill (14:1) */
+  --accent-soft: #f1fbd6; /* selection / flash highlight */
+  --accent-ink: #3f5a0c; /* text on --accent-soft or white (7:1) */
+  --accent-edge: #6b961e; /* lime-family border/ring on white (3.5:1) */
+  --accent-on-dark: #c6f432; /* lime on graphite: active nav, toast actions (14:1) */
 
   /* Shipment statuses: to send → sent → delivered ("leglo"), plus returned.
-     Each has a soft fill (`-soft`) for chips and a strong ink for text/dots. */
-  --status-pending: oklch(0.7 0.15 70);
-  --status-pending-soft: oklch(0.95 0.06 85);
-  --status-sent: oklch(0.6 0.15 250);
-  --status-sent-soft: oklch(0.94 0.04 245);
-  --status-delivered: oklch(0.6 0.15 150);
-  --status-delivered-soft: oklch(0.94 0.06 150);
-  --status-returned: oklch(0.6 0.18 25);
-  --status-returned-soft: oklch(0.95 0.04 25);
+     `-soft` fills chips, `-ink` is text on that fill, plain is dot / bar. */
+  --status-pending: #e0a01f; /* amber */
+  --status-pending-soft: #fdf4e1;
+  --status-pending-ink: #8a5a00;
+  --status-sent: #1ca6d9; /* sky */
+  --status-sent-soft: #e6f4fb;
+  --status-sent-ink: #0b6390;
+  --status-delivered: #2f9e6a; /* green */
+  --status-delivered-soft: #e7f5ee;
+  --status-delivered-ink: #17704a;
+  --status-returned: #d9473d; /* red */
+  --status-returned-soft: #fcecea;
+  --status-returned-ink: #a8302a;
 
-  /* Money: profit up / down */
-  --gain: oklch(0.55 0.14 150);
-  --loss: oklch(0.57 0.2 27);
+  /* Danger: out of stock (solid chip), destructive actions, errors */
+  --danger: #c2372f;
+  --danger-hover: #ab2e27;
+  --danger-soft: #fcecea;
+  --danger-ink: #a8302a;
 
-  /* Chart series (statistics panel), taken from the Catena spectrum. */
-  --chart-1: oklch(0.6 0.2 295); /* violet: revenue */
-  --chart-2: oklch(0.7 0.17 25); /* coral: profit */
-  --chart-3: oklch(0.72 0.15 220); /* blue */
-  --chart-4: oklch(0.8 0.15 80); /* amber */
-  --chart-5: oklch(0.7 0.13 160); /* green */
+  /* Money: profit up / down — the same everywhere (tables, tiles, charts, legends) */
+  --gain: #1b7a52;
+  --gain-soft: #e7f5ee;
+  --loss: #c2372f;
+  --loss-soft: #fcecea;
 
-  /* The five-colour spectrum: hero ribbon, gradient borders, underlines */
-  --spectrum-1: #ffc93c;
-  --spectrum-2: #ff8a4c;
-  --spectrum-3: #ff4f9a;
-  --spectrum-4: #9b6bff;
-  --spectrum-5: #3fa2ff;
+  /* Chart series. Revenue is the quiet slate, profit is always --gain. */
+  --chart-1: #8d96a8; /* revenue */
+  --chart-2: var(--gain); /* profit */
+  --chart-3: #4b5263; /* neutral series (e.g. direct sales) */
+  --chart-4: var(--status-sent); /* sky series (e.g. shipment sales) */
+  --chart-5: var(--status-pending); /* amber series */
+  --chart-band: #ecf9c4; /* selected-period band (lime tint) */
+  --chart-grid: #eceef2;
 
-  /* Logo dots */
-  --dot-1: oklch(0.7 0.17 25);
-  --dot-2: oklch(0.7 0.17 290);
-  --dot-3: oklch(0.72 0.15 220);
-
-  /* Statement verbs and package-builder progress */
-  --tone-1: oklch(0.66 0.19 28);
-  --tone-2: oklch(0.6 0.2 295);
-  --tone-3: oklch(0.63 0.15 235);
-
-  /* Soft colour washes in the corner of package-builder cards */
-  --wash-0: oklch(0.78 0.14 295 / 0.75);
-  --wash-1: oklch(0.8 0.12 235 / 0.75);
-  --wash-2: oklch(0.84 0.13 55 / 0.8);
-  --wash-3: oklch(0.78 0.16 345 / 0.75);
-  --wash-4: oklch(0.82 0.12 155 / 0.75);
-  --wash-5: oklch(0.8 0.13 320 / 0.7);
+  /* Elevation: hairline + a breath of shadow, never a glow */
+  --shadow-xs: 0 1px 2px rgb(17 21 28 / 0.05);
+  --shadow-card: 0 1px 2px rgb(17 21 28 / 0.04), 0 1px 3px rgb(17 21 28 / 0.03);
+  --shadow-pop: 0 1px 2px rgb(17 21 28 / 0.06), 0 12px 32px -8px rgb(17 21 28 / 0.22);
+  --shadow-dialog: 0 2px 6px rgb(17 21 28 / 0.06), 0 24px 64px -16px rgb(17 21 28 / 0.32);
 
   /* Shape */
-  --radius: 0.875rem; /* form fields */
-  --radius-card: 24px;
-  --radius-panel: 28px;
+  --radius: 0.5rem; /* fields, buttons: 8px */
+  --radius-card: 12px;
+  --radius-dialog: 14px;
+
+  /* Shell */
+  --sidebar-w: 240px;
+  --topbar-h: 56px;
+  --tabbar-h: 64px;
 
   /* shadcn semantic tokens */
-  --background: var(--cream);
-  --foreground: var(--ink);
-  --card: #fff;
-  --card-foreground: var(--ink);
-  --popover: #fff;
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--cream);
-  --secondary: var(--sand);
-  --secondary-foreground: var(--ink);
-  --muted: var(--stone);
-  --muted-foreground: var(--ink-muted);
-  --accent: rgb(22 22 26 / 0.06);
-  --accent-foreground: var(--ink);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: var(--line);
-  --input: var(--line-strong);
-  --ring: var(--tone-2);
+  --background: var(--canvas);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface);
+  --popover-foreground: var(--fg);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-fg);
+  --secondary: var(--sunken);
+  --secondary-foreground: var(--fg);
+  --muted: var(--sunken);
+  --muted-foreground: var(--fg-muted);
+  --accent-foreground: var(--accent-fg);
+  --destructive: var(--danger);
+  --border: var(--hairline);
+  --input: var(--hairline-strong);
+  --ring: var(--graphite-900); /* focus: 2px graphite outline, 2px offset */
 }
 
 @theme inline {
-  --font-sans: var(--font-geist), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-display: var(--font-bricolage), var(--font-geist), system-ui, sans-serif;
-  --font-heading: var(--font-display);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  --color-cream: var(--cream);
-  --color-sand: var(--sand);
-  --color-stone: var(--stone);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-subtle: var(--ink-subtle);
-  --color-ink-faint: var(--ink-faint);
-  --color-night: var(--night);
-  --color-night-raised: var(--night-raised);
-  --color-night-muted: var(--night-muted);
-  --color-night-faint: var(--night-faint);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-  --color-highlight: var(--highlight);
-  --color-pop: var(--pop);
-  --color-success: var(--success);
-  --color-check: var(--check);
-  --color-link-hover: var(--link-hover);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-hover: var(--surface-hover);
+  --color-sunken: var(--sunken);
+  --color-sunken-strong: var(--sunken-strong);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-graphite-950: var(--graphite-950);
+  --color-graphite-900: var(--graphite-900);
+  --color-graphite-850: var(--graphite-850);
+  --color-graphite-800: var(--graphite-800);
+  --color-graphite-700: var(--graphite-700);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-raised: var(--sidebar-raised);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-line: var(--sidebar-line);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-fg-muted: var(--sidebar-fg-muted);
+  --color-sidebar-fg-faint: var(--sidebar-fg-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-press: var(--accent-press);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-edge: var(--accent-edge);
+  --color-accent-on-dark: var(--accent-on-dark);
   --color-status-pending: var(--status-pending);
   --color-status-pending-soft: var(--status-pending-soft);
+  --color-status-pending-ink: var(--status-pending-ink);
   --color-status-sent: var(--status-sent);
   --color-status-sent-soft: var(--status-sent-soft);
+  --color-status-sent-ink: var(--status-sent-ink);
   --color-status-delivered: var(--status-delivered);
   --color-status-delivered-soft: var(--status-delivered-soft);
+  --color-status-delivered-ink: var(--status-delivered-ink);
   --color-status-returned: var(--status-returned);
   --color-status-returned-soft: var(--status-returned-soft);
+  --color-status-returned-ink: var(--status-returned-ink);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
   --color-gain: var(--gain);
+  --color-gain-soft: var(--gain-soft);
   --color-loss: var(--loss);
+  --color-loss-soft: var(--loss-soft);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-dot-1: var(--dot-1);
-  --color-dot-2: var(--dot-2);
-  --color-dot-3: var(--dot-3);
+  --color-chart-band: var(--chart-band);
+  --color-chart-grid: var(--chart-grid);
 
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -173,16 +216,71 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-dialog: var(--shadow-dialog);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.25);
+  --radius-xl: var(--radius-card);
   --radius-card: var(--radius-card);
-  --radius-panel: var(--radius-panel);
+  --radius-dialog: var(--radius-dialog);
 
   --ease-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --ease-spring: cubic-bezier(0.3, 1.6, 0.5, 1);
-  --ease-expand: cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+/* ── Type scale ───────────────────────────────────────────────────────────
+   One family (Inter, optical sizes on), six steps. Every figure that sits
+   in a column or a tile is set with `tabular-nums` so money lines up.
+   (Not globally: Inter's tabular set also widens the hyphen in names.) */
+@utility type-title {
+  /* Page titles */
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+@utility type-heading {
+  /* Panel / dialog titles */
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+@utility type-figure {
+  /* Headline numbers in stat cards (Inter's display optical size kicks in) */
+  font-size: 1.75rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+@utility type-label {
+  /* Field labels, stat labels, table heads */
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: var(--fg-muted);
+}
+@utility type-overline {
+  /* Group eyebrows and form sections: the only uppercase in the app */
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+@utility font-code {
+  /* SKUs, shipment codes, tracking numbers: JetBrains Mono. Set it a pixel
+     smaller than the Inter around it (its x-height is taller). */
+  font-family: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-variant-numeric: slashed-zero;
+  font-feature-settings: "zero" 1;
+  letter-spacing: -0.01em;
 }
 
 @layer base {
@@ -191,10 +289,22 @@
   }
   html {
     @apply font-sans antialiased;
+    font-optical-sizing: auto;
+    /* Inter: open digits, single-storey-free defaults; disambiguated l/I. */
+    font-feature-settings: "cv05", "cv08", "ss03";
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-canvas text-fg;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 55%, transparent);
+    color: var(--fg);
+  }
+  /* A visible focus for anything that does not style its own. */
+  :focus-visible {
+    outline-offset: 2px;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -207,3 +317,12 @@
   }
 }
 
+/* Keyboard focus. Tailwind 4's `outline-none` sets `--tw-outline-style: none`,
+   and `focus-visible:outline-2` draws `outline-style: var(--tw-outline-style)`,
+   so the pair would draw nothing. Restore the solid style for keyboard focus
+   (unlayered, so it beats the utility): `outline-none focus-visible:outline-2
+   focus-visible:outline-ring` then shows the 2px ring the design asks for.
+   Elements without an outline width utility keep `outline-style: none`. */
+:focus-visible {
+  --tw-outline-style: solid;
+}

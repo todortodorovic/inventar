@@ -29,27 +29,25 @@ export const periodKeys: readonly PeriodKey[] = ["7d", "30d", "3m", "12m", "all"
 /** Half-open time range `[start, end)` in epoch ms; `start: null` is "since the beginning". */
 export type DateRange = { start: number | null; end: number }
 
-const DAY = 86_400_000
-
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-
 /**
  * The selected period as whole local days ending with today, plus the
  * equal-length range right before it (null for "all", which has nothing to
- * compare with).
+ * compare with). Boundaries are local midnights built with calendar
+ * arithmetic, never by subtracting 24-hour blocks, so a daylight-saving
+ * change inside a range cannot shift its edges off midnight.
  */
 export function periodRange(period: PeriodKey, now: Date): { current: DateRange; previous: DateRange | null } {
-  const end = startOfDay(now).getTime() + DAY
+  // Midnight that starts tomorrow: the exclusive end of "today".
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const d = now.getDate() + 1
+  const end = new Date(y, m, d).getTime()
   if (period === "all") return { current: { start: null, end }, previous: null }
-  let start: number
-  if (period === "7d" || period === "30d") {
-    start = end - (period === "7d" ? 7 : 30) * DAY
-  } else {
-    const d = startOfDay(now)
-    d.setMonth(d.getMonth() - (period === "3m" ? 3 : 12))
-    start = d.getTime() + DAY
-  }
-  return { current: { start, end }, previous: { start: start - (end - start), end: start } }
+  const span = { "7d": 7, "30d": 30, "3m": 3, "12m": 12 }[period]
+  const byMonths = period === "3m" || period === "12m"
+  /** The midnight `steps` whole periods before `end`. */
+  const back = (steps: number) => (byMonths ? new Date(y, m - steps * span, d) : new Date(y, m, d - steps * span)).getTime()
+  return { current: { start: back(1), end }, previous: { start: back(2), end: back(1) } }
 }
 
 export function inRange(iso: string | undefined, range: DateRange): boolean {
@@ -289,7 +287,7 @@ function addShipment(t: StatusTotals, sh: Shipment) {
   t.expectedProfit += shipmentProfit(sh)
 }
 
-/** Parcels still holding stock ("na putu": packed or with the courier), in total and per status. */
+/** Parcels still holding stock (packed or with the courier), in total and per status. */
 export function openShipmentsSummary(state: InventoryState): StatusTotals & { byStatus: Record<"pending" | "sent", StatusTotals> } {
   const total = emptyTotals()
   const byStatus = { pending: emptyTotals(), sent: emptyTotals() }

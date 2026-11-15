@@ -55,7 +55,12 @@ export function EditShipmentDialog({
       phone: dict.validation.phone,
     })
     setErrors(found)
-    if (!details) return
+    if (!details) {
+      // Focus the first problem in reading order.
+      const firstInvalid = (["name", "phone", "shippingCost"] as const).find((key) => found[key])
+      if (firstInvalid) document.getElementById(`${idPrefix}-${firstInvalid}`)?.focus()
+      return
+    }
     const result = inventory.updateShipment(shipment.id, details)
     if (!result.ok) {
       toast(t.errors[result.error], { tone: "error" })
@@ -74,7 +79,7 @@ export function EditShipmentDialog({
         </DialogHeader>
         <form
           noValidate
-          className="flex min-w-0 flex-col gap-7"
+          className="flex min-w-0 flex-col gap-6"
           onSubmit={(e) => {
             e.preventDefault()
             submit()
@@ -83,10 +88,10 @@ export function EditShipmentDialog({
           <RecipientFields idPrefix={idPrefix} draft={draft} errors={errors} onChange={change} dict={dict.form} />
           <DeliveryFields idPrefix={idPrefix} draft={draft} errors={errors} onChange={change} dict={dict.form} />
           <DialogFooter>
-            <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" size="cta" onClick={() => onOpenChange(false)}>
               {t.actions.cancel}
             </Button>
-            <Button type="submit" variant="brand" size="cta">
+            <Button type="submit" variant="primary" size="cta">
               {t.actions.save}
             </Button>
           </DialogFooter>

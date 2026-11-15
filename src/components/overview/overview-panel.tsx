@@ -41,7 +41,7 @@ import { TopArticles } from "./top-articles"
 /**
  * Pregled: the home page. One period filter at the top scopes the KPIs and
  * the breakdowns; the stock row is always "right now"; the monthly chart
- * keeps its 12 months and highlights the ones in the period.
+ * keeps its 12 months and marks the ones in the period with a lime band.
  */
 export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
   const { locale, t } = useApp()
@@ -59,7 +59,18 @@ export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
           label={dict.period.label}
           value={period}
           onChange={setPeriod}
-          options={periodKeys.map((key) => ({ value: key, label: dict.period[key] }))}
+          options={periodKeys.map((key) => ({
+            value: key,
+            // Short labels on phones so all five fit at 390px; the full one stays the accessible name.
+            label: (
+              <>
+                <span className="sm:hidden" aria-hidden>
+                  {dict.periodShort[key]}
+                </span>
+                <span className="max-sm:sr-only">{dict.period[key]}</span>
+              </>
+            ),
+          }))}
         />
       }
     />
@@ -84,7 +95,7 @@ export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
             title={dict.empty.title}
             description={dict.empty.description}
             action={
-              <Link href={localePath(locale, "inventory")} className={buttonVariants({ variant: "brand", size: "cta" })}>
+              <Link href={localePath(locale, "inventory")} className={buttonVariants({ variant: "primary", size: "cta" })}>
                 {dict.empty.action}
               </Link>
             }
@@ -96,17 +107,19 @@ export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
 
   const { current, previous } = periodRange(period, now)
   const sales = salesIn(state, current)
+  const months = monthlySeries(state, now)
 
   return (
     <>
       {header}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-7">
         <Group id="overview-period" label={dict.groups.period[period]}>
           <KpiRow
             dict={dict}
             period={period}
             current={periodSummary(state, current)}
             previous={previous && periodSummary(state, previous)}
+            months={months}
           />
         </Group>
 
@@ -116,7 +129,7 @@ export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="min-w-0 lg:col-span-8">
-            <MonthlyChart dict={dict.chart} points={monthlySeries(state, now)} range={current} />
+            <MonthlyChart dict={dict.chart} points={months} range={current} />
           </div>
           <div className="min-w-0 lg:col-span-4">
             <CategoryProfit dict={dict.categories} rows={profitByCategory(sales)} />
@@ -139,13 +152,13 @@ export function OverviewPanel({ dict }: { dict: Dictionary["overview"] }) {
   )
 }
 
-/** A labelled band of tiles: mono eyebrow above, content below. */
+/** A labelled band of tiles: a small eyebrow with a hairline, content below. */
 function Group({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="flex items-center gap-3 font-mono text-[11px] font-medium tracking-[0.16em] text-ink-muted uppercase">
+    <section aria-labelledby={id} className="flex flex-col gap-2.5">
+      <h2 id={id} className="flex items-center gap-3 type-overline">
         {label}
-        <span className="h-px flex-1 bg-line" aria-hidden />
+        <span className="h-px flex-1 bg-hairline" aria-hidden />
       </h2>
       {children}
     </section>

@@ -1,7 +1,7 @@
 "use client"
 
 import { DownloadIcon, PlusIcon, ReceiptTextIcon, SearchXIcon } from "lucide-react"
-import { useState, type ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
 import { useApp } from "@/components/app/app-provider"
 import { ChipGroup } from "@/components/app/chip-group"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
@@ -21,14 +21,11 @@ import type { Article, Id, Sale, SaleChannel } from "@/lib/inventory/types"
 import { toast } from "@/lib/toast"
 import { exportSalesCsv } from "./export-csv"
 import { NewSaleDialog } from "./new-sale-dialog"
-import { inRange, periodRange, periods, type Period } from "./period"
+import { inRange, periodRange, periodShortLabel, periods, type Period } from "./period"
 import { SaleList } from "./sale-list"
 import { SalesStats } from "./sales-stats"
 
 type ChannelFilter = "all" | SaleChannel
-
-// Chips are 32px tall by default; on phones they need a 40px target.
-const touchChips = "self-start max-md:[&>button]:min-h-10"
 
 /** Prodato: every completed sale, direct or from a delivered shipment, with profit. */
 export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
@@ -44,6 +41,7 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
   const [undoing, setUndoing] = useState<Sale | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [highlightId, setHighlightId] = useState<Id | null>(null)
+  const newSaleRef = useRef<HTMLButtonElement>(null)
 
   function undo(id: Id) {
     const result = inventory.undoSale(id)
@@ -68,8 +66,30 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
     setQuery("")
   }
 
+  // The period sits in the header, as on Pregled: it scopes the tiles and the list below.
+  const periodChips = (now: Date) => (
+    <ChipGroup<Period>
+      label={dict.filters.period}
+      value={period}
+      onChange={setPeriod}
+      options={periods.map((p) => ({
+        value: p,
+        // Short labels on phones so all six fit at 390px; the full one stays the accessible name.
+        label: (
+          <>
+            <span className="sm:hidden" aria-hidden>
+              {periodShortLabel(p, now, locale, dict.filters.periodsShort)}
+            </span>
+            <span className="max-sm:sr-only">{dict.filters.periods[p]}</span>
+          </>
+        ),
+      }))}
+      className="max-sm:w-full"
+    />
+  )
+
   const header = (actions?: ReactNode) => (
-    <PageHeader eyebrow={dict.eyebrow} title={dict.title} subtitle={dict.subtitle} actions={actions} />
+    <PageHeader title={dict.title} subtitle={dict.subtitle} actions={actions} />
   )
 
   if (!state || !now) {
@@ -104,12 +124,39 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
     toast(fill(dict.exported, { count: plural(t.units.sales, shown.length, locale) }))
   }
 
-  const newSaleButton = (
-    <Button variant="brand" size="cta" onClick={() => setNewOpen(true)}>
+  // Lime only once per view: the header's CTA; the empty state repeats it in graphite.
+  const newSaleButton = (variant: "primary" | "dark") => (
+    <Button ref={variant === "primary" ? newSaleRef : undefined} variant={variant} size="cta" onClick={() => setNewOpen(true)}>
       <PlusIcon data-icon="inline-start" />
       {dict.newSale}
     </Button>
   )
+
+  /**
+   * Undo from the confirm dialog. Its trigger (the row's button) disappears with
+   * the sale, so once the dialog has closed, focus moves to the next row's
+   * action (or the previous one), else to the page's "Nova prodaja".
+   */
+  function confirmUndo(sale: Sale) {
+    const i = shown.findIndex((s) => s.id === sale.id)
+    const neighbours = [shown[i + 1], shown[i - 1]].filter(Boolean).map((s) => s.id)
+    undo(sale.id)
+    const target = () => {
+      for (const id of neighbours) {
+        for (const el of document.querySelectorAll<HTMLElement>(`[data-sale-action="${id}"]`)) {
+          if (el.offsetParent) return el
+        }
+      }
+      return newSaleRef.current
+    }
+    // The dialog hands focus back to its (now removed) trigger as it unmounts; take over after that.
+    // (Gives up waiting after ~2s of frames.)
+    const whenClosed = (frames: number) => {
+      if (frames > 0 && document.querySelector('[data-slot="dialog-content"]')) requestAnimationFrame(() => whenClosed(frames - 1))
+      else target()?.focus()
+    }
+    requestAnimationFrame(() => whenClosed(120))
+  }
 
   const undoingArticleExists = !!undoing && state.articles.some((a) => a.id === undoing.articleId)
 
@@ -117,13 +164,14 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
     <>
       {header(
         <>
+          {state.sales.length > 0 && periodChips(now)}
           {state.sales.length > 0 && (
-            <Button variant="outline" size="cta" className="rounded-full" onClick={exportCsv}>
+            <Button variant="outline" size="cta" onClick={exportCsv}>
               <DownloadIcon data-icon="inline-start" />
               {dict.exportCsv}
             </Button>
           )}
-          {newSaleButton}
+          {newSaleButton("primary")}
         </>,
       )}
 
@@ -133,29 +181,15 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
             icon={ReceiptTextIcon}
             title={dict.empty.title}
             description={dict.empty.description}
-            action={newSaleButton}
+            action={newSaleButton("dark")}
           />
         </Panel>
       ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <ChipGroup
-                label={dict.filters.period}
-                value={period}
-                onChange={setPeriod}
-                options={periods.map((p) => ({ value: p, label: dict.filters.periods[p] }))}
-                className={touchChips}
-              />
-              <SearchInput
-                value={query}
-                onChange={setQuery}
-                placeholder={dict.filters.search}
-                clearLabel={t.actions.clearSearch}
-                className="lg:w-[340px]"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-5">
+          <SalesStats sales={shown} shipments={state.shipments} dict={dict} />
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
               <ChipGroup
                 label={dict.filters.channel}
                 value={channel}
@@ -168,7 +202,7 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
                     count: base.filter((s) => s.channel === c).length,
                   })),
                 ]}
-                className={touchChips}
+                className="self-start"
               />
               <NativeSelect
                 aria-label={t.fields.category}
@@ -184,9 +218,14 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
                 ))}
               </NativeSelect>
             </div>
+            <SearchInput
+              value={query}
+              onChange={setQuery}
+              placeholder={dict.filters.search}
+              clearLabel={t.actions.clearSearch}
+              className="sm:max-w-[420px] lg:w-[340px] lg:shrink-0"
+            />
           </div>
-
-          <SalesStats sales={shown} dict={dict} />
 
           {shown.length === 0 ? (
             <Panel>
@@ -196,11 +235,11 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
                 description={query ? t.filters.noResults : dict.empty.filteredDescription}
                 action={
                   period === "all" ? (
-                    <Button variant="outline" size="cta" className="rounded-full" onClick={resetFilters}>
+                    <Button variant="outline" size="cta" onClick={resetFilters}>
                       {dict.filters.clear}
                     </Button>
                   ) : (
-                    <Button variant="outline" size="cta" className="rounded-full" onClick={() => setPeriod("all")}>
+                    <Button variant="outline" size="cta" onClick={() => setPeriod("all")}>
                       {dict.empty.showAll}
                     </Button>
                   )
@@ -238,7 +277,7 @@ export function SalesPanel({ dict }: { dict: Dictionary["sales"] }) {
           })
         }
         confirmLabel={dict.undo.confirm}
-        onConfirm={() => undoing && undo(undoing.id)}
+        onConfirm={() => undoing && confirmUndo(undoing)}
       />
     </>
   )

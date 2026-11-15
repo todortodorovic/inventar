@@ -127,7 +127,7 @@ function SellForm({
               type="button"
               variant="outline"
               size="icon"
-              className="size-10 shrink-0 rounded-full"
+              className="size-10 shrink-0 md:size-9"
               onClick={() => step(-1)}
               disabled={current <= 1}
               aria-label={dict.sell.decrease}
@@ -148,7 +148,7 @@ function SellForm({
               type="button"
               variant="outline"
               size="icon"
-              className="size-10 shrink-0 rounded-full"
+              className="size-10 shrink-0 md:size-9"
               onClick={() => step(1)}
               disabled={current >= max}
               aria-label={dict.sell.increase}
@@ -197,7 +197,10 @@ function SellForm({
         </Field>
       </div>
 
-      <Preview title={dict.sell.preview}>
+      <Preview
+        title={dict.sell.preview}
+        announce={profit === null ? "" : `${t.fields.profit}: ${formatMoney(profit, locale)}`}
+      >
         <PreviewRow
           label={t.fields.revenue}
           value={revenue === null ? "—" : formatMoney(revenue, locale)}
@@ -218,10 +221,10 @@ function SellForm({
       {price.value !== null && price.value < article.purchasePrice && <Warning>{dict.sell.belowCost}</Warning>}
 
       <DialogFooter>
-        <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={onClose}>
+        <Button type="button" variant="ghost" size="cta" onClick={onClose}>
           {t.actions.cancel}
         </Button>
-        <Button type="submit" variant="brand" size="cta">
+        <Button type="submit" variant="primary" size="cta">
           {dict.sell.submit}
         </Button>
       </DialogFooter>

@@ -155,12 +155,15 @@ function ReceiveForm({
       </div>
 
       {article && (
-        <Preview title={dict.receive.preview}>
+        <Preview
+          title={dict.receive.preview}
+          announce={average === null ? "" : `${dict.receive.newPrice}: ${formatMoney(average, locale)}`}
+        >
           <PreviewRow
             label={dict.receive.newQuantity}
             value={
               <>
-                <span className="text-ink-faint">{article.quantity} → </span>
+                <span className="text-fg-faint">{article.quantity} → </span>
                 {total === null ? "—" : plural(t.units.pieces, total, locale)}
               </>
             }
@@ -172,7 +175,7 @@ function ReceiveForm({
             strong
           />
           {average !== null && average !== article.purchasePrice && (
-            <p className="text-right text-[13px] text-ink-muted tabular-nums">
+            <p className="text-right text-[12.5px] text-fg-muted tabular-nums">
               {t.fields.purchasePrice}: <s>{formatMoney(article.purchasePrice, locale)}</s>
             </p>
           )}
@@ -180,10 +183,10 @@ function ReceiveForm({
       )}
 
       <DialogFooter>
-        <Button type="button" variant="ghost" size="cta" className="rounded-full" onClick={onClose}>
+        <Button type="button" variant="ghost" size="cta" onClick={onClose}>
           {t.actions.cancel}
         </Button>
-        <Button type="submit" variant="brand" size="cta" disabled={!article}>
+        <Button type="submit" variant="primary" size="cta" disabled={!article}>
           {dict.receive.submit}
         </Button>
       </DialogFooter>

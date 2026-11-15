@@ -1,20 +1,48 @@
 import { cn } from "@/lib/utils"
 
 const sizes = {
-  md: { dot: "size-4 not-first:-ml-1.5", text: "text-[22px] tracking-[-0.04em] font-bold" },
-  sm: { dot: "size-3 not-first:-ml-1", text: "text-[17px] tracking-[-0.03em] font-semibold" },
+  md: { mark: "size-7", text: "text-[17px]" },
+  sm: { mark: "size-6", text: "text-[16px]" },
 }
 
-/** Three overlapping dots + the wordmark (Catena's mark). Colours come from `--dot-1..3`. */
-export function Logo({ size = "md", className }: { size?: keyof typeof sizes; className?: string }) {
+/**
+ * Face colours of the mark per background. The lid is always lime (stock
+ * that is ready to go); the sides take the ink of the surface they sit on,
+ * and the seams are cut in that surface's colour.
+ */
+const tones = {
+  light: { face: "var(--graphite-900)", seam: "var(--surface)", text: "text-fg" },
+  dark: { face: "var(--sidebar-fg)", seam: "var(--sidebar)", text: "text-sidebar-fg" },
+}
+
+/** The mark alone: an isometric box with a lime lid. */
+export function LogoMark({ tone = "light", className }: { tone?: keyof typeof tones; className?: string }) {
+  const c = tones[tone]
+  return (
+    <svg viewBox="0 0 28 28" className={cn("shrink-0", className)} aria-hidden>
+      <g stroke={c.seam} strokeWidth="1.3" strokeLinejoin="round">
+        <path d="M14 2.5 24.5 8.5 14 14.5 3.5 8.5Z" fill="var(--accent)" />
+        <path d="M3.5 8.5 14 14.5V26.5L3.5 20.5Z" fill={c.face} fillOpacity="0.94" />
+        <path d="M24.5 8.5V20.5L14 26.5V14.5Z" fill={c.face} fillOpacity="0.5" />
+      </g>
+    </svg>
+  )
+}
+
+/** Mark + lowercase wordmark in Inter semibold. `tone="dark"` on the graphite sidebar. */
+export function Logo({
+  size = "md",
+  tone = "light",
+  className,
+}: {
+  size?: keyof typeof sizes
+  tone?: keyof typeof tones
+  className?: string
+}) {
   const s = sizes[size]
   return (
-    <span className={cn("inline-flex items-center gap-2.5 font-display", s.text, className)}>
-      <span className="flex" aria-hidden>
-        <span className={cn("rounded-full bg-dot-1", s.dot)} />
-        <span className={cn("rounded-full bg-dot-2 mix-blend-multiply", s.dot)} />
-        <span className={cn("rounded-full bg-dot-3 mix-blend-multiply", s.dot)} />
-      </span>
+    <span className={cn("inline-flex items-center gap-2.5 font-semibold tracking-[-0.03em]", tones[tone].text, s.text, className)}>
+      <LogoMark tone={tone} className={s.mark} />
       inventar
     </span>
   )

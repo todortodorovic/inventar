@@ -132,7 +132,7 @@ export const inventory = {
     soldPieces: "Prodato komada",
     salesProfit: "Zarađeno",
     shipment: "Pošiljka {code}",
-    unitPrice: "{price} po komadu",
+    unitPrice: "{price}/kom.",
     movements: { one: "{n} kretanje", few: "{n} kretanja", other: "{n} kretanja" } satisfies Plural as Plural,
   },
   delete: {

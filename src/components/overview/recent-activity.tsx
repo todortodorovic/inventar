@@ -11,12 +11,26 @@ import type { ActivityEvent } from "@/lib/inventory/stats"
 import type { ShipmentStatus } from "@/lib/inventory/types"
 import { cn } from "@/lib/utils"
 import { PanelEmpty } from "./figures"
+import { profitText } from "@/components/app/money"
 
 const shipmentIcon: Record<ShipmentStatus, LucideIcon> = {
   pending: PackageIcon,
   sent: TruckIcon,
   delivered: PackageCheckIcon,
   returned: Undo2Icon,
+}
+
+/** Fills `{code}` in a template with the shipment code set in the code face (1px smaller beside Inter). */
+function withCode(template: string, code: string) {
+  const [before, ...after] = template.split("{code}")
+  if (after.length === 0) return template
+  return (
+    <>
+      {before}
+      <span className="font-code text-[12.5px]">{code}</span>
+      {after.join(code)}
+    </>
+  )
 }
 
 /** The latest sales and parcel status changes, newest first, as a timeline. */
@@ -36,41 +50,38 @@ export function RecentActivity({
       {events.length === 0 ? (
         <PanelEmpty>{dict.empty}</PanelEmpty>
       ) : (
-        <ol className="flex flex-col px-5 pt-4 pb-5 sm:px-6">
+        <ol className="flex flex-col px-4 pt-4 pb-4 sm:px-5">
           {events.map((e, i) => {
             const Icon = e.kind === "sale" ? ReceiptTextIcon : shipmentIcon[e.status]
-            const title =
-              e.kind === "sale"
-                ? fill(dict.sale, { name: e.sale.articleName })
-                : fill(dict.shipment[e.status], { code: e.shipment.code })
+            const title = e.kind === "sale" ? fill(dict.sale, { name: e.sale.articleName }) : withCode(dict.shipment[e.status], e.shipment.code)
             const who = e.kind === "sale" ? e.sale.buyer || dict.walkIn : e.shipment.recipient.name
             const amount = e.kind === "sale" ? saleRevenue(e.sale) : shipmentTotal(e.shipment)
             return (
-              <li key={e.key} className="relative flex gap-3.5 pb-4 last:pb-0">
+              <li key={e.key} className="relative flex gap-3 pb-4 last:pb-0">
                 {/* The timeline's thread, from this dot down to the next. */}
-                {i < events.length - 1 && <span className="absolute top-9 bottom-0 left-[17px] w-px bg-line" aria-hidden />}
+                {i < events.length - 1 && <span className="absolute top-8 bottom-0 left-[13.5px] w-px bg-hairline" aria-hidden />}
                 <span
                   className={cn(
-                    "relative grid size-9 shrink-0 place-items-center rounded-full",
-                    e.kind === "sale" ? "bg-sand text-ink-soft" : statusClass[e.status].chip,
+                    "relative grid size-7 shrink-0 place-items-center rounded-md ring-1 ring-inset",
+                    e.kind === "sale" ? "bg-gain-soft text-gain ring-gain/15" : cn(statusClass[e.status].chip, "ring-fg/5"),
                   )}
                   aria-hidden
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-3.5" />
                 </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate text-[15px] font-medium">{title}</span>
+                    <span className="min-w-0 truncate text-[13.5px] font-medium">{title}</span>
                     <span
                       className={cn(
-                        "shrink-0 text-sm font-semibold tabular-nums",
-                        e.kind === "shipment" && e.status === "returned" && "text-ink-faint line-through",
+                        "shrink-0 text-[13.5px] font-semibold tabular-nums",
+                        e.kind === "shipment" && e.status === "returned" && "text-fg-faint line-through",
                       )}
                     >
                       {formatMoney(amount, locale)}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-3 text-[13px] text-ink-muted">
+                  <div className="flex items-baseline justify-between gap-3 text-[12.5px] text-fg-muted">
                     <span className="min-w-0 truncate">
                       {who} ·{" "}
                       <time dateTime={e.date} title={formatDateTime(e.date, locale)}>
@@ -78,7 +89,7 @@ export function RecentActivity({
                       </time>
                     </span>
                     {e.kind === "sale" ? (
-                      <span className={cn("shrink-0 tabular-nums", saleProfit(e.sale) < 0 ? "text-loss" : "text-gain")}>
+                      <span className={cn("shrink-0 tabular-nums", profitText(saleProfit(e.sale)))}>
                         {t.fields.profit} {formatMoney(saleProfit(e.sale), locale)}
                       </span>
                     ) : (

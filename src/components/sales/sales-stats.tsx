@@ -3,35 +3,49 @@
 import { useApp } from "@/components/app/app-provider"
 import { StatTile } from "@/components/app/stat-tile"
 import type { Dictionary } from "@/content/types"
-import { formatMoney, formatPercent, plural } from "@/lib/format"
-import { saleCost, saleProfit, saleRevenue } from "@/lib/inventory/selectors"
-import type { Sale, SaleChannel } from "@/lib/inventory/types"
+import { fill, formatMoney, formatPercent, plural } from "@/lib/format"
+import { marginOf, saleRevenue } from "@/lib/inventory/selectors"
+import { sumSales } from "@/lib/inventory/stats"
+import type { Id, Sale, SaleChannel, Shipment } from "@/lib/inventory/types"
 
 const channelColor: Record<SaleChannel, string> = {
-  direct: "var(--ink)",
-  shipment: "var(--status-sent)",
+  direct: "var(--chart-3)",
+  shipment: "var(--chart-4)",
 }
 
-/** Headline numbers for the sales currently shown (after every filter). */
-export function SalesStats({ sales, dict }: { sales: Sale[]; dict: Dictionary["sales"] }) {
+/**
+ * Headline numbers for the sales currently shown (after every filter).
+ * Profit is net, like Pregled's: the goods' margin minus the postage paid on
+ * the delivered parcels whose sales are shown (the same figure the Leglo
+ * confirm promises).
+ */
+export function SalesStats({
+  sales,
+  shipments,
+  dict,
+}: {
+  sales: Sale[]
+  shipments: readonly Shipment[]
+  dict: Dictionary["sales"]
+}) {
   const { t, locale } = useApp()
 
-  let revenue = 0
-  let cost = 0
-  let profit = 0
-  let pieces = 0
+  const { revenue, cost, grossProfit, pieces } = sumSales(sales)
   const byChannel: Record<SaleChannel, number> = { direct: 0, shipment: 0 }
+  const parcels = new Set<Id>()
   for (const s of sales) {
-    revenue += saleRevenue(s)
-    cost += saleCost(s)
-    profit += saleProfit(s)
-    pieces += s.quantity
     byChannel[s.channel] += saleRevenue(s)
+    if (s.shipmentId) parcels.add(s.shipmentId)
   }
-  const margin = revenue > 0 ? profit / revenue : null
+  let postage = 0
+  for (const sh of shipments) if (sh.status === "delivered" && parcels.has(sh.id)) postage += sh.shippingCost
+  const profit = grossProfit - postage
+  const margin = marginOf(revenue, revenue - profit)
+  // Profit keeps one colour everywhere: green for gain, red for loss.
+  const profitColor = profit < 0 ? "var(--loss)" : "var(--chart-2)"
 
   return (
-    <section aria-label={dict.stats.label} className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+    <section aria-label={dict.stats.label} className="grid grid-cols-2 gap-3 lg:grid-cols-6 lg:gap-4">
       <StatTile
         className="col-span-2"
         label={t.fields.revenue}
@@ -42,7 +56,7 @@ export function SalesStats({ sales, dict }: { sales: Sale[]; dict: Dictionary["s
             <span>{dict.stats.revenueHint}</span>
             {revenue > 0 && (
               <span className="flex flex-col gap-1.5">
-                <span role="img" aria-label={dict.stats.split} className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-ink/6">
+                <span role="img" aria-label={dict.stats.split} className="flex h-1.5 gap-[3px] overflow-hidden rounded-full bg-sunken-strong/70">
                   {(["direct", "shipment"] as const).map(
                     (c) =>
                       byChannel[c] > 0 && (
@@ -54,10 +68,10 @@ export function SalesStats({ sales, dict }: { sales: Sale[]; dict: Dictionary["s
                       ),
                   )}
                 </span>
-                <span className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.06em] uppercase">
+                <span className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-fg-muted">
                   {(["direct", "shipment"] as const).map((c) => (
                     <span key={c} className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full" style={{ background: channelColor[c] }} aria-hidden />
+                      <span className="size-2 rounded-[2px]" style={{ background: channelColor[c] }} aria-hidden />
                       {t.saleChannel[c]} {formatPercent(byChannel[c] / revenue, locale)}
                     </span>
                   ))}
@@ -70,10 +84,10 @@ export function SalesStats({ sales, dict }: { sales: Sale[]; dict: Dictionary["s
       <StatTile label={t.fields.cost} value={formatMoney(cost, locale)} hint={dict.stats.costHint} />
       <StatTile
         label={t.fields.profit}
-        accent="var(--chart-2)"
+        accent={profitColor}
         value={formatMoney(profit, locale)}
         tone={profit > 0 ? "gain" : profit < 0 ? "loss" : "default"}
-        hint={dict.stats.profitHint}
+        hint={postage > 0 ? fill(dict.stats.postageHint, { amount: formatMoney(postage, locale) }) : dict.stats.profitHint}
       />
       <StatTile
         label={t.fields.margin}
