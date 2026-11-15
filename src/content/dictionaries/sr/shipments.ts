@@ -1,0 +1,148 @@
+import type { Plural } from "@/lib/format"
+
+/** Copy for the "shipments" section. */
+export const shipments = {
+  title: "Pošiljke",
+  subtitle: "Šta se pakuje, šta je na putu i šta je leglo.",
+  newShipment: "Nova pošiljka",
+
+  stats: {
+    label: "Pošiljke u brojkama",
+    pending: "Za slanje",
+    pendingHint: "Otkupnina: {amount}",
+    sent: "Na putu",
+    sentHint: "Čeka naplatu: {amount}",
+    delivered: "Leglo ovog meseca",
+    deliveredHint: {
+      one: "Profit od {n} pošiljke",
+      few: "Profit od {n} pošiljke",
+      other: "Profit od {n} pošiljki",
+    } satisfies Plural as Plural,
+    returned: "Vraćeno",
+    returnedHint: "{percent} od završenih pošiljki",
+    returnedNone: "Nijedna pošiljka nije vraćena.",
+  },
+
+  filters: {
+    label: "Prikaži pošiljke po statusu",
+    active: "Aktivne",
+    search: "Kod, ime, telefon, grad, artikal…",
+    list: "Lista pošiljki",
+  },
+
+  card: {
+    call: "Pozovi {phone}",
+    noAddress: "Adresa nije upisana",
+    items: "Sadržaj",
+    each: "{price} po kom.",
+    cod: "Otkupnina",
+    shipping: "Poštarina",
+    tracking: "Praćenje",
+    actions: "Radnje za pošiljku {code}",
+  },
+
+  timeline: {
+    label: "Tok pošiljke",
+    created: "Spakovano",
+    sent: "Poslato",
+    delivered: "Leglo",
+    returned: "Vraćeno",
+    notYet: "još nije",
+    skipped: "preskočeno",
+  },
+
+  actions: {
+    send: "Pošalji",
+    deliver: "Leglo",
+    return: "Vraćeno",
+    cancel: "Otkaži pošiljku",
+    backToPending: "Vrati na „Za slanje“",
+    undeliver: "Poništi leglo",
+    copy: "Kopiraj podatke za kurira",
+    showSales: "Prikaži",
+  },
+
+  toasts: {
+    created: "Pošiljka {code} je napravljena.",
+    saved: "Izmene na pošiljci {code} su sačuvane.",
+    sent: "Pošiljka {code} je poslata.",
+    delivered: "Leglo! Pošiljka {code} je naplaćena: {amount}.",
+    returned: "Pošiljka {code} je vraćena, artikli su ponovo na stanju.",
+    cancelled: "Pošiljka {code} je otkazana, artikli su ponovo na stanju.",
+    backToPending: "Pošiljka {code} je ponovo za slanje.",
+    undelivered: "Leglo je poništeno, pošiljka {code} je ponovo na putu.",
+    deleted: "Pošiljka {code} je obrisana.",
+    copied: "Podaci za kurira su kopirani.",
+    copyFailed: "Pregledač nije dozvolio kopiranje.",
+    articleUnavailable: "Taj artikal više nije na stanju.",
+  },
+
+  confirm: {
+    deliverTitle: "Označi {code} kao leglo?",
+    deliverText:
+      "Kupac je platio otkupninu od {amount}. Artikli iz pošiljke prelaze u Prodato, a profit od {profit} ulazi u statistiku.",
+    deliverConfirm: "Da, leglo je",
+    returnTitle: "Označi {code} kao vraćeno?",
+    returnText: "Paket se vratio ili ga kupac nije preuzeo. Artikli ({pieces}) se vraćaju na stanje.",
+    returnConfirm: "Vraćeno je",
+    cancelTitle: "Otkaži pošiljku {code}?",
+    cancelText: "Pošiljka ostaje u listi kao vraćena, a artikli ({pieces}) se vraćaju na stanje.",
+    cancelConfirm: "Otkaži pošiljku",
+    undeliverTitle: "Poništi leglo za {code}?",
+    undeliverText:
+      "Prodaje iz ove pošiljke ({amount}) biće uklonjene iz Prodatog, a pošiljka se vraća na „Poslato“.",
+    undeliverConfirm: "Poništi leglo",
+    deleteTitle: "Obriši pošiljku {code}?",
+    deletePendingText: "Artikli ({pieces}) se vraćaju na stanje. Brisanje se ne može poništiti.",
+    deleteReturnedText: "Pošiljka nestaje iz liste. Artikli su već vraćeni na stanje.",
+  },
+
+  form: {
+    createTitle: "Nova pošiljka",
+    createDescription: "Ko prima paket, šta je u njemu i koliko se naplaćuje pouzećem.",
+    editTitle: "Izmeni pošiljku {code}",
+    editDescription: "Primalac, poštarina i praćenje. Sadržaj pošiljke se ne menja.",
+    recipient: "Primalac",
+    name: "Ime i prezime",
+    address: "Ulica i broj",
+    city: "Mesto",
+    postalCode: "Poštanski broj",
+    items: "Artikli",
+    searchArticles: "Pretraži artikle na stanju",
+    noArticles: "Nema artikala na stanju. Prvo dodaj robu u Stanje.",
+    onHand: "{pieces} na stanju",
+    added: "Dodato: {n}",
+    noLines: "Još nijedan artikal. Izaberi ga iz liste iznad.",
+    lineQuantity: "Količina za {name}",
+    linePrice: "Cena po komadu za {name}",
+    decrease: "Smanji količinu",
+    increase: "Povećaj količinu",
+    removeLine: "Ukloni {name}",
+    delivery: "Slanje",
+    shippingCost: "Poštarina koju plaćaš",
+    shippingHint: "Upiši 0 ako poštarinu plaća kupac.",
+    tracking: "Broj za praćenje",
+    trackingHint: "Nije obavezno, može i kasnije.",
+    notePlaceholder: "npr. pozvati pre isporuke",
+    summary: "Obračun",
+    pieces: "Broj komada",
+    cod: "Otkupnina",
+    shipping: "Poštarina",
+    submit: "Napravi pošiljku",
+  },
+
+  validation: {
+    phone: "Unesi broj telefona (bar 6 cifara).",
+    noItems: "Dodaj bar jedan artikal.",
+  },
+
+  empty: {
+    title: "Još nema pošiljki",
+    text: "Kad šalješ poštom, napravi pošiljku: artikli se skidaju sa stanja, a kad legne, prelaze u Prodato.",
+    activeTitle: "Nema aktivnih pošiljki",
+    activeText: "Sve što je poslato je leglo ili se vratilo.",
+    filteredTitle: "Ništa ne odgovara",
+    filteredText: "Nijedna pošiljka ne odgovara ovom statusu ili pretrazi.",
+    showAll: "Prikaži sve",
+  },
+}
